@@ -1,0 +1,5 @@
+{
+  "name": "Fantasy Adventure RPG",
+  "description": "A responsive browser-based dungeon crawler RPG featuring multiple classes, turn-based ATB combat, equipment systems, and endless progression.",
+  "requestFramePermissions": []
+}
