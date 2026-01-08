@@ -24,6 +24,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+
   100% {
     opacity: 0;
     transform: translateY(-60px);
@@ -41,9 +42,26 @@
 
 /* 螢幕震動效果 */
 @keyframes screen-shake {
-  0%, 100% { transform: translate(0, 0); }
-  10%, 30%, 50%, 70%, 90% { transform: translate(-4px, 4px); }
-  20%, 40%, 60%, 80% { transform: translate(4px, -4px); }
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translate(-4px, 4px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translate(4px, -4px);
+  }
 }
 
 .screen-shake {
@@ -52,9 +70,19 @@
 
 /* 怪物震動效果 */
 @keyframes monster-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-8px);
+  }
+
+  75% {
+    transform: translateX(8px);
+  }
 }
 
 .monster-shake {
@@ -63,8 +91,15 @@
 
 /* 受擊閃爍效果 */
 @keyframes hit-flash {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(2) saturate(1.5); }
+
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(2) saturate(1.5);
+  }
 }
 
 .hit-flash {
@@ -73,14 +108,26 @@
 
 /* ATB 進度條動畫 */
 @keyframes atb-fill {
-  from { width: 0%; }
-  to { width: 100%; }
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
 }
 
 /* 脈衝效果 */
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .pulse {
@@ -89,8 +136,13 @@
 
 /* 漸入效果 */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .fade-in {
@@ -99,11 +151,12 @@
 
 /* 滑入效果 */
 @keyframes slide-in {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateY(0);
   }
@@ -120,8 +173,13 @@ button:active {
 
 /* 狀態效果圖示旋轉 */
 @keyframes status-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .status-icon-spin {
@@ -130,8 +188,15 @@ button:active {
 
 /* 金幣閃爍 */
 @keyframes gold-shine {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.5) drop-shadow(0 0 8px gold); }
+
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.5) drop-shadow(0 0 8px gold);
+  }
 }
 
 .gold-shine {
@@ -153,8 +218,15 @@ button:active {
 
 /* 對話框打字效果 */
 @keyframes typing-cursor {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 .typing-cursor::after {

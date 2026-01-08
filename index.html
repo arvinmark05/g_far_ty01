@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fantasy Adventure RPG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* 禁止選取文字，讓遊戲體驗更像原生 App */
-      body {
-        user-select: none;
-        -webkit-user-select: none;
-        overscroll-behavior: none;
-      }
-      /* 自定義滾動條樣式 */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.3);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(139, 92, 246, 0.5);
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(139, 92, 246, 0.7);
-      }
-    </style>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fantasy Adventure RPG</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 禁止選取文字，讓遊戲體驗更像原生 App */
+    body {
+      user-select: none;
+      -webkit-user-select: none;
+      overscroll-behavior: none;
+    }
+
+    /* 自定義滾動條樣式 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(139, 92, 246, 0.5);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 92, 246, 0.7);
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -37,10 +42,12 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-black text-white overflow-x-hidden">
-    <div id="root"></div>
+
+<body class="bg-black text-white overflow-x-hidden">
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
