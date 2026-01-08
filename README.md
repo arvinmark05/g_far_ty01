@@ -4,7 +4,7 @@
 
 ## 🎮 線上遊玩
 
-**[立即開始冒險！](https://arvinmark05.github.io/fantasy-adventure-rpg/)**
+**[立即開始冒險！](https://arvinmark05.github.io/g_far_ty01/)**
 
 ## ✨ 遊戲特色
 
