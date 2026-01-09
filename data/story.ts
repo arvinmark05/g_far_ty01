@@ -1,12 +1,12 @@
 
 import { StoryScript } from '../types';
 
-// 使用線上圖片服務確保立繪能正常顯示
-// 如果您未來要換回本地圖片，請確保圖片位於 public/img/ 資料夾，並將路徑改為 'img/filename.png' '../assets/img/smith_01.png' (相對路徑)
-const IMG_GUIDE_NORMAL = '../assets/img/smith_01.png';
-const IMG_SMITH_NORMAL = '../assets/img/smith_02.png';
-const IMG_SMITH_HAPPY = '../assets/img/smith_02.png';
-const IMG_VILLAGE_HEAD = '../assets/img/smith_02.png';
+// 圖片需放在 public/img/ 資料夾，使用 BASE_URL 確保 GitHub Pages 部署後路徑正確
+const BASE = import.meta.env.BASE_URL;
+const IMG_GUIDE_NORMAL = `${BASE}img/smith_01.png`;
+const IMG_SMITH_NORMAL = `${BASE}img/smith_02.png`;
+const IMG_SMITH_HAPPY = `${BASE}img/smith_02.png`;
+const IMG_VILLAGE_HEAD = `${BASE}img/smith_02.png`;
 
 export const STORY_SCRIPTS: StoryScript[] = [
   {
