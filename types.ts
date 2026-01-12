@@ -31,7 +31,7 @@ export interface Affix {
   stat?: 'str' | 'agi' | 'vit' | 'int';
   value?: number; // e.g., 10
   // Expanded passive effects
-  passiveEffect?: 'life_steal' | 'bleed_on_hit' | 'thorns' | 'crit_chance' | 'crit_damage' | 'dodge_chance'; 
+  passiveEffect?: 'life_steal' | 'bleed_on_hit' | 'thorns' | 'crit_chance' | 'crit_damage' | 'dodge_chance';
 }
 
 export interface Item {
@@ -42,13 +42,13 @@ export interface Item {
   def?: number;
   price: number;
   skill?: Skill; // Passive skill or reference
-  
+
   // New Systems
   maxSlots?: number;
   slots?: number; // Current AVAILABLE slots
   affixes?: string[]; // List of Affix IDs
   refineLevel?: number; // 0 to 9
-  
+
   // Material properties
   isMaterial?: boolean;
   materialType?: 'refine_stone' | 'rune_stone';
@@ -108,19 +108,38 @@ export interface StatusEffect {
 
 // --- Story System Types ---
 
+export interface GameFlags {
+  smith_rescued?: boolean;
+  backpack_quest_started?: boolean;
+  backpack_found?: boolean;
+  lily_joined?: boolean;
+  floor_100_cleared?: boolean;
+  floor_200_cleared?: boolean;
+  floor_300_cleared?: boolean;
+  floor_400_cleared?: boolean;
+  floor_500_cleared?: boolean;
+  intro_seen?: boolean;
+  shop_tutorial_seen?: boolean;
+}
+
 export interface DialogueLine {
   speakerName: string;
   text: string;
-  image?: string; // Path to image asset (e.g., '../assets/img/smith_01.png')
-  emotion?: 'normal' | 'angry' | 'happy' | 'surprise'; // For potential CSS effects or variant selection
+  image?: string;
+  emotion?: 'normal' | 'angry' | 'happy' | 'surprise' | 'lewd' | 'fear' | 'cry';
+  // Special actions
+  showNameInput?: boolean; // Trigger name input modal
 }
 
 export interface StoryScript {
   id: string;
-  priority: number; // Higher number checks first
+  priority: number;
   lines: DialogueLine[];
-  // Condition logic to trigger this script
-  condition: (player: any, gameState: string, currentDepth: number, maxDepth: number) => boolean;
-  // Callback after script finishes (e.g., give item, increment progress)
-  onFinish?: (player: any) => Partial<any>; 
+  condition: (player: any, gameState: string, currentDepth: number, maxDepth: number, phase?: 'before_battle' | 'after_battle' | 'camp') => boolean;
+  onFinish?: (player: any) => Partial<any>;
+  // New fields
+  requireFlags?: Partial<GameFlags>; // Shortcut for flag checking
+  setFlags?: Partial<GameFlags>; // Flags to set on finish
+  forceReturnToVillage?: boolean; // For ending events
 }
+

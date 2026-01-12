@@ -14,6 +14,6 @@ export const BOSS_MONSTERS: Record<number, Monster> = {
   100: { name: '巨魔領主', emoji: '👹', hp: 600, atk: 50, speed: 12, gold: 500, exp: 300, isBoss: true },
   200: { name: '死靈法師', emoji: '🧙‍♂️', hp: 1000, atk: 70, speed: 15, gold: 1000, exp: 600, isBoss: true },
   300: { name: '遠古巨龍', emoji: '🐲', hp: 2000, atk: 100, speed: 18, gold: 2000, exp: 1200, isBoss: true },
-  400: { name: '深淵魔王', emoji: '😱', hp: 3500, atk: 140, speed: 22, gold: 4000, exp: 2000, isBoss: true },
-  500: { name: '毀滅之神', emoji: '👿', hp: 6666, atk: 180, speed: 25, gold: 10000, exp: 5000, isBoss: true }
+  400: { name: '吸血伯爵', emoji: '🧛', hp: 3500, atk: 140, speed: 22, gold: 4000, exp: 2000, isBoss: true },
+  500: { name: '暗影魔王', emoji: '👿', hp: 6666, atk: 180, speed: 25, gold: 10000, exp: 5000, isBoss: true }
 };

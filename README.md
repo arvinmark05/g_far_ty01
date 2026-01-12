@@ -1,18 +1,10 @@
 # Fantasy Adventure RPG
 
-一款使用 React + TypeScript 開發的幻想冒險 RPG 遊戲。
+一款使用 React + TypeScript 開發的遊戲。
 
 ## 🎮 線上遊玩
 
 **[立即開始冒險！](https://arvinmark05.github.io/g_far_ty01/)**
-
-## ✨ 遊戲特色
-
-- 🗡️ 多職業系統（戰士、法師、遊俠、騎士）
-- ⚔️ 即時戰鬥系統與技能冷卻
-- 🎒 裝備強化與附魔系統
-- 📖 劇情系統與成就解鎖
-- 💾 自動存檔功能
 
 ## 🛠️ 技術棧
 

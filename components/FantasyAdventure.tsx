@@ -10,7 +10,7 @@ import { ACHIEVEMENTS } from '../data/achievements';
 import { CLASS_SKILLS, WEAPON_ARTS } from '../data/skills';
 import { calculateStats, getMonsterDrops, getItemDisplayName, getRefinedStat } from '../utils/gameFormulas';
 import { BattleHandler, BattleResult } from '../utils/BattleHandler';
-import { FloatingText, StatusEffect, Item, StoryScript } from '../types';
+import { FloatingText, StatusEffect, Item, StoryScript, GameFlags } from '../types';
 import { StoryHandler } from '../utils/StoryHandler';
 import DialogueOverlay from './DialogueOverlay';
 
@@ -31,11 +31,17 @@ export default function FantasyAdventure() {
 
   // Story System State
   const [currentScript, setCurrentScript] = useState<StoryScript | null>(null);
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [pendingPlayerName, setPendingPlayerName] = useState('');
+  const [pendingNextEncounter, setPendingNextEncounter] = useState(false); // Track if we need to proceed after story
 
   // Shop State
   const [shopTab, setShopTab] = useState<'buy' | 'sell' | 'refine' | 'enchant'>('buy');
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [selectedMaterialIndex, setSelectedMaterialIndex] = useState<number | null>(null);
+
+  // --- DEV TOOLS STATE (可移除區塊) ---
+  const [devStartFloor, setDevStartFloor] = useState(1);
 
   // 戰鬥與特效
   const [playerATB, setPlayerATB] = useState(0);
@@ -87,6 +93,8 @@ export default function FantasyAdventure() {
   }, [battleLog]);
 
   // --- 戰鬥循環 (使用 BattleHandler) ---
+  const monsterAttackingRef = useRef(false);
+
   useEffect(() => {
     // 若有劇情正在播放，暫停戰鬥循環
     if (inBattle && currentMonster && player && !currentScript) {
@@ -107,9 +115,16 @@ export default function FantasyAdventure() {
         setMonsterATB(prev => {
           const newATB = prev + result.monsterAtbDelta;
           if (newATB >= 100) {
-            // 怪物行動
-            performMonsterAttack();
-            return 0;
+            // 怪物行動 - 使用 ref 防止重複觸發
+            if (!monsterAttackingRef.current) {
+              monsterAttackingRef.current = true;
+              // 使用 setTimeout 確保在 state update 完成後執行
+              setTimeout(() => {
+                performMonsterAttack();
+                monsterAttackingRef.current = false;
+              }, 0);
+            }
+            return 0; // 始終重置 ATB
           }
           return newATB;
         });
@@ -353,17 +368,44 @@ export default function FantasyAdventure() {
   const handleStoryComplete = () => {
     if (!currentScript) return;
 
-    // Execute onFinish updates
-    if (currentScript.onFinish) {
-      const updates = currentScript.onFinish(player);
+    // Use StoryHandler to process script finish (handles onFinish + setFlags)
+    const updates = StoryHandler.processScriptFinish(currentScript, player);
+    if (Object.keys(updates).length > 0) {
       setPlayer((prev: any) => ({ ...prev, ...updates }));
-      // If gold was added, maybe show a toast, but we'll leave it to UI updates
-      if (updates.storyProgress) {
-        // Trigger save after significant story progress
+      // Trigger save after significant story progress
+      if (updates.storyProgress || updates.flags) {
         setTimeout(() => saveGame(false), 100);
       }
     }
+
+    // Handle forceReturnToVillage (for ending)
+    if (currentScript.forceReturnToVillage) {
+      setCurrentScript(null);
+      setPendingNextEncounter(false);
+      setTimeout(() => {
+        returnToVillage();
+      }, 500);
+      return;
+    }
+
+    // Check if we need to proceed to next encounter (after after_battle story)
+    const shouldProceed = pendingNextEncounter;
+
     setCurrentScript(null);
+    setPendingNextEncounter(false);
+
+    if (shouldProceed) {
+      // Proceed to next encounter after a short delay
+      setTimeout(() => {
+        setCurrentMonster(null);
+        const nextEvent = checkNextEvent(depth);
+        if (nextEvent.type === 'camp') {
+          enterCamp(nextEvent.depth);
+        } else {
+          encounterMonster(depth);
+        }
+      }, 500);
+    }
   };
 
   // --- Game Logic ---
@@ -372,6 +414,8 @@ export default function FantasyAdventure() {
     const selectedClass = CLASSES[classKey];
 
     setPlayer({
+      name: 'Hero', // Default name, will be set by intro
+      flags: {} as GameFlags,
       class: selectedClass.name,
       classKey: classKey,
       baseMaxHp: selectedClass.hp,
@@ -395,16 +439,27 @@ export default function FantasyAdventure() {
       achievements: [],
       maxDamage: 0,
       statusEffects: [],
-      storyProgress: 0 // Init story progress
+      storyProgress: 0
     });
     setGameState('village');
+  };
+
+  // Dynamic camp frequency based on floor depth
+  const getCampChance = (floor: number): boolean => {
+    if (floor <= 100) return floor % 10 === 0;
+    if (floor <= 200) return floor % 20 === 0;
+    if (floor <= 300) return floor % 30 === 0;
+    if (floor <= 400) return floor % 40 === 0;
+    return floor % 50 === 0;
   };
 
   const checkNextEvent = (currentDepth: number) => {
     const nextDepth = currentDepth + 1;
     if (BOSS_MONSTERS[nextDepth]) return { type: 'boss', depth: nextDepth };
+    // Force camp before boss floors
     if (BOSS_MONSTERS[nextDepth + 1]) return { type: 'camp', depth: nextDepth };
-    if (nextDepth % 10 === 0) return { type: 'camp', depth: nextDepth };
+    // Dynamic camp frequency
+    if (getCampChance(nextDepth)) return { type: 'camp', depth: nextDepth };
     return { type: 'battle', depth: nextDepth };
   };
 
@@ -431,6 +486,13 @@ export default function FantasyAdventure() {
     const stats = calculateStats(player);
     setPlayer((prev: any) => ({ ...prev, hp: stats.maxHp, shield: stats.maxShield, statusEffects: [] }));
     saveGame(false);
+
+    // Check for camp story trigger
+    const campScript = StoryHandler.checkTriggers(player, 'camp', campDepth, maxDepth, 'camp');
+    if (campScript) {
+      setCurrentScript(campScript);
+    }
+
     setGameState('camp');
   };
 
@@ -484,6 +546,12 @@ export default function FantasyAdventure() {
       setBattleLog(prev => [...prev, `⚠️ 深度 ${newDepth} - Boss出現！`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
     } else {
       setBattleLog(prev => [...prev, `深度 ${newDepth}`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
+    }
+
+    // Check for before_battle story trigger
+    const beforeBattleScript = StoryHandler.checkTriggers(player, 'battle', newDepth, maxDepth, 'before_battle');
+    if (beforeBattleScript) {
+      setCurrentScript(beforeBattleScript);
     }
 
     setInBattle(true);
@@ -584,6 +652,14 @@ export default function FantasyAdventure() {
     }
 
     setTimeout(() => {
+      // Check for after_battle story trigger before transitioning
+      const afterBattleScript = StoryHandler.checkTriggers(player, gameState, depth, maxDepth, 'after_battle');
+      if (afterBattleScript) {
+        setCurrentScript(afterBattleScript);
+        setPendingNextEncounter(true); // Mark that we need to proceed after story
+        return;
+      }
+
       setCurrentMonster(null);
       const nextEvent = checkNextEvent(depth);
       if (nextEvent.type === 'camp') {
@@ -803,6 +879,69 @@ export default function FantasyAdventure() {
                 ))}
               </div>
             </div>
+
+            {/* === DEV TOOLS SECTION START (可移除區塊) === */}
+            <div className="mt-6 pt-4 border-t border-red-500/30">
+              <h3 className="text-sm font-bold text-red-400 mb-3 flex items-center gap-2">🛠️ 開發者測試工具</h3>
+              <div className="space-y-3">
+                {/* Level Up */}
+                <button
+                  onClick={() => {
+                    if (!player) return;
+                    const newLevel = player.level + 5;
+                    setPlayer((prev: any) => ({
+                      ...prev,
+                      level: newLevel,
+                      baseMaxHp: prev.baseMaxHp + 100,
+                      statPoints: prev.statPoints + 5,
+                    }));
+                  }}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 p-2 rounded-lg text-white font-bold text-sm transition-all"
+                >
+                  ⬆️ 提升等級 (+5 Lv)
+                </button>
+                {/* Add Gold */}
+                <button
+                  onClick={() => {
+                    if (!player) return;
+                    setPlayer((prev: any) => ({ ...prev, gold: prev.gold + 10000 }));
+                  }}
+                  className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 p-2 rounded-lg text-white font-bold text-sm transition-all"
+                >
+                  💰 獲得大量金錢 (+10000)
+                </button>
+                {/* Custom Start Floor */}
+                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
+                  <div className="text-xs text-gray-400 mb-2">設定探索起始樓層</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={devStartFloor}
+                      onChange={(e) => setDevStartFloor(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="flex-1 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-purple-500 focus:outline-none"
+                      placeholder="樓層"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!player) return;
+                        const targetDepth = Math.max(1, devStartFloor);
+                        setDepth(targetDepth - 1);
+                        setLastCampDepth(targetDepth);
+                        if (targetDepth > maxDepth) setMaxDepth(targetDepth);
+                        encounterMonster(targetDepth - 1);
+                        setShowSettings(false);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded text-white font-bold text-sm transition-all"
+                    >
+                      出發
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-gray-500 mt-1">將直接開始該樓層戰鬥，並設為營地深度</div>
+                </div>
+              </div>
+            </div>
+            {/* === DEV TOOLS SECTION END === */}
           </div>
         </div>
       </div>
@@ -974,8 +1113,16 @@ export default function FantasyAdventure() {
                 <div className="text-2xl mb-1">📊</div><div className="text-lg font-bold text-white">素質配點</div>
                 {player.statPoints > 0 && <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">+{player.statPoints}</div>}
               </button>
-              <button onClick={() => { setPreviousState('village'); setGameState('shop'); }} className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 p-3 rounded-xl transition-all transform hover:scale-105 border border-yellow-400/50 shadow-lg">
-                <div className="text-2xl mb-1">🏪</div><div className="text-lg font-bold text-white">前往商店</div>
+              <button
+                onClick={() => { if (player.flags?.smith_rescued) { setPreviousState('village'); setGameState('shop'); } }}
+                disabled={!player.flags?.smith_rescued}
+                className={`p-3 rounded-xl transition-all transform border shadow-lg ${player.flags?.smith_rescued
+                  ? 'bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 hover:scale-105 border-yellow-400/50'
+                  : 'bg-gray-700 border-gray-600 opacity-50 cursor-not-allowed'}`}
+              >
+                <div className="text-2xl mb-1">🏪</div>
+                <div className="text-lg font-bold text-white">前往商店</div>
+                {!player.flags?.smith_rescued && <div className="text-gray-400 text-xs mt-0.5">🔒 尚未解鎖</div>}
               </button>
               <button onClick={() => setShowInventory(!showInventory)} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 p-3 rounded-xl transition-all transform hover:scale-105 border border-purple-400/50 shadow-lg">
                 <div className="text-2xl mb-1">📦</div><div className="text-lg font-bold text-white">背包</div><div className="text-purple-200 text-xs mt-0.5">道具: {inventory.length}</div>
@@ -1015,6 +1162,22 @@ export default function FantasyAdventure() {
     // ... (Keep Explore, Camp, Battle from previous code)
 
     if (gameState === 'explore-choice') {
+      // Helper to start from specific depth
+      const startFromDepth = (targetDepth: number) => {
+        setDepth(targetDepth - 1);
+        setLastCampDepth(targetDepth);
+        encounterMonster(targetDepth - 1);
+      };
+
+      // Shortcut unlock conditions
+      const shortcuts = [
+        { depth: 101, flag: 'floor_100_cleared', label: '深度 101' },
+        { depth: 201, flag: 'floor_200_cleared', label: '深度 201' },
+        { depth: 301, flag: 'floor_300_cleared', label: '深度 301' },
+        { depth: 401, flag: 'floor_400_cleared', label: '深度 401' },
+        { depth: 501, flag: 'floor_500_cleared', label: '深度 501 (無盡)' },
+      ];
+
       return (
         <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-4 flex items-center justify-center">
           <div className="bg-black/40 backdrop-blur-sm rounded-xl p-8 max-w-2xl w-full border border-purple-500/30">
@@ -1028,6 +1191,32 @@ export default function FantasyAdventure() {
                   <div className="text-4xl">🏕️</div><div><div className="text-2xl font-bold text-white">從營地出發</div><div className="text-green-200 text-sm">直接前往深度 {lastCampDepth}</div></div>
                 </button>
               )}
+
+              {/* Dungeon Shortcuts */}
+              {shortcuts.some(s => player.flags?.[s.flag as keyof GameFlags]) && (
+                <div className="border-t border-purple-500/30 pt-4 mt-4">
+                  <h3 className="text-sm font-bold text-purple-400 mb-3">⚡ 快捷傳送</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {shortcuts.map(shortcut => {
+                      const isUnlocked = player.flags?.[shortcut.flag as keyof GameFlags];
+                      return (
+                        <button
+                          key={shortcut.depth}
+                          onClick={() => isUnlocked && startFromDepth(shortcut.depth)}
+                          disabled={!isUnlocked}
+                          className={`p-3 rounded-lg text-left border transition-all ${isUnlocked
+                            ? 'bg-purple-900/50 hover:bg-purple-800/70 border-purple-500/50 hover:scale-105'
+                            : 'bg-gray-800/50 border-gray-700/50 opacity-40 cursor-not-allowed'}`}
+                        >
+                          <div className="font-bold text-white text-sm">{shortcut.label}</div>
+                          {!isUnlocked && <div className="text-gray-500 text-xs">🔒 未解鎖</div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <button onClick={() => setGameState('village')} className="w-full bg-gray-700 hover:bg-gray-600 p-4 rounded-xl transition-all border border-gray-500 text-white font-bold">返回村莊</button>
             </div>
           </div>
@@ -1112,14 +1301,13 @@ export default function FantasyAdventure() {
               <div className="max-w-md mx-auto relative z-10">
                 <div className={`text-2xl font-bold mb-1 ${currentMonster.isBoss ? 'text-red-400' : 'text-gray-200'}`}>{currentMonster.isBoss && '💀 '}{currentMonster.name}{currentMonster.isBoss && ' 💀'}</div>
 
-                {/* 怪物狀態列 */}
-                {currentMonster.statusEffects && currentMonster.statusEffects.length > 0 && (
-                  <div className="flex justify-center gap-1 mb-2">
-                    {currentMonster.statusEffects.map((effect: StatusEffect, i: number) => (
-                      <StatusIcon key={i} effect={effect} />
-                    ))}
-                  </div>
-                )}
+                {/* 怪物狀態列 - 固定高度含 ATK */}
+                <div className="flex justify-center items-center gap-2 mb-2 h-6">
+                  <div className="text-xs text-orange-400 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full border border-orange-500/20"><Sword className="w-3 h-3" /> {currentMonster.atk}</div>
+                  {currentMonster.statusEffects && currentMonster.statusEffects.map((effect: StatusEffect, i: number) => (
+                    <StatusIcon key={i} effect={effect} />
+                  ))}
+                </div>
 
                 <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden border border-gray-700">
                   <div className={`absolute top-0 left-0 h-full transition-all duration-300 ${currentMonster.isBoss ? 'bg-gradient-to-r from-red-600 to-purple-600' : 'bg-gradient-to-r from-red-500 to-orange-500'}`} style={{ width: `${(currentMonster.hp / currentMonster.maxHp) * 100}%` }} />
@@ -1132,30 +1320,29 @@ export default function FantasyAdventure() {
                       <div className="h-full bg-yellow-400 transition-all duration-100" style={{ width: `${monsterATB}%` }} />
                     </div>
                   </div>
-                  <div className="text-xs text-orange-400 mt-1 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full border border-orange-500/20"><Sword className="w-3 h-3" /> {currentMonster.atk}</div>
                 </div>
               </div>
             </div>
 
-            <div ref={battleLogRef} className="flex-1 min-h-[100px] bg-black/60 backdrop-blur-md rounded-lg p-2 mb-2 border-t border-b border-white/10 overflow-y-auto text-center custom-scrollbar">
+            <div ref={battleLogRef} className="h-48 bg-black/60 backdrop-blur-md rounded-lg p-2 mb-2 border-t border-b border-white/10 overflow-y-auto text-center custom-scrollbar">
               {battleLog.map((log, i) => (<div key={i} className="text-gray-300 text-sm py-0.5">{log}</div>))}
             </div>
 
             <div className="bg-black/60 backdrop-blur-md rounded-lg p-3 mb-2 border border-white/10 shrink-0">
               <div className="flex justify-between items-center mb-1">
                 <div className="flex flex-col">
-                  <div className="text-white font-bold text-lg flex items-center gap-2">{player.class} <span className="text-sm text-gray-400">Lv.{player.level}</span></div>
-
-                  {/* 玩家狀態列 */}
-                  {player.statusEffects && player.statusEffects.length > 0 && (
-                    <div className="flex gap-1 my-0.5">
-                      {player.statusEffects.map((effect: StatusEffect, i: number) => (
-                        <StatusIcon key={i} effect={effect} />
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-[10px] text-gray-300"><span className="flex items-center gap-0.5 text-orange-300"><Sword size={10} />{stats.atk}</span><span className="flex items-center gap-0.5 text-purple-300"><Sparkles size={10} />{stats.matk}</span></div>
+                  <div className="text-white font-bold text-lg flex items-center gap-2">
+                    {player.class} <span className="text-sm text-gray-400">Lv.{player.level}</span>
+                    {/* 玩家異常狀態 icon - 顯示在等級右方 */}
+                    {player.statusEffects && player.statusEffects.length > 0 && (
+                      <div className="flex gap-1 ml-1">
+                        {player.statusEffects.map((effect: StatusEffect, i: number) => (
+                          <StatusIcon key={i} effect={effect} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-300"><span className="flex items-center gap-0.5 text-orange-300"><Sword size={10} />{stats.atk}</span><span className="flex items-center gap-0.5 text-purple-300"><Sparkles size={10} />{stats.matk}</span><span className="flex items-center gap-0.5 text-slate-300"><Shield size={10} />{stats.def}</span></div>
                 </div>
                 <div className="w-1/3 max-w-[120px]">
                   <div className="flex justify-between text-[10px] text-yellow-400 mb-0.5"><span>ATB</span><span>{Math.floor(playerATB)}%</span></div>
@@ -1234,8 +1421,26 @@ export default function FantasyAdventure() {
             <div className="flex gap-2 mb-4">
               <button onClick={() => setShopTab('buy')} className={`flex-1 py-2 rounded-lg font-bold ${shopTab === 'buy' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>購買</button>
               <button onClick={() => setShopTab('sell')} className={`flex-1 py-2 rounded-lg font-bold ${shopTab === 'sell' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>出售</button>
-              <button onClick={() => setShopTab('refine')} className={`flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 ${shopTab === 'refine' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}><Hammer size={16} /> 強化</button>
-              <button onClick={() => setShopTab('enchant')} className={`flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 ${shopTab === 'enchant' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}><Gem size={16} /> 附魔</button>
+              <button
+                onClick={() => player.flags?.floor_100_cleared && setShopTab('refine')}
+                disabled={!player.flags?.floor_100_cleared}
+                className={`flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 ${!player.flags?.floor_100_cleared
+                  ? 'bg-gray-800 text-gray-600 opacity-50 cursor-not-allowed'
+                  : shopTab === 'refine' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+              >
+                <Hammer size={16} /> 強化 {!player.flags?.floor_100_cleared && '🔒'}
+              </button>
+              <button
+                onClick={() => player.flags?.floor_200_cleared && setShopTab('enchant')}
+                disabled={!player.flags?.floor_200_cleared}
+                className={`flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 ${!player.flags?.floor_200_cleared
+                  ? 'bg-gray-800 text-gray-600 opacity-50 cursor-not-allowed'
+                  : shopTab === 'enchant' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+              >
+                <Gem size={16} /> 附魔 {!player.flags?.floor_200_cleared && '🔒'}
+              </button>
             </div>
 
             {/* Equipped Items (Always visible for quick unequip) */}
@@ -1433,6 +1638,9 @@ export default function FantasyAdventure() {
         <DialogueOverlay
           lines={currentScript.lines}
           onComplete={handleStoryComplete}
+          onNameSubmit={(name) => {
+            setPlayer((prev: any) => ({ ...prev, name }));
+          }}
         />
       )}
     </div>
