@@ -1,5 +1,5 @@
 
-import { calculateStats, getRefinedStat } from './gameFormulas';
+import { calculateStats, getRefinedStat, calculateDamage } from './gameFormulas';
 import { CLASS_SKILLS, WEAPON_ARTS } from '../data/skills';
 import { CLASSES } from '../data/classes';
 import { FloatingText, StatusEffect, StatusType, Item } from '../types';
@@ -38,7 +38,7 @@ export class BattleHandler {
         if (existingIndex >= 0) {
             // 已存在，刷新持續時間並疊加
             const effect = { ...effects[existingIndex] };
-            
+
             if (type === 'poison') {
                 effect.stacks = Math.min(10, effect.stacks + 1);
                 effect.duration = 4.0;
@@ -53,14 +53,14 @@ export class BattleHandler {
                 effect.stacks = Math.min(5, effect.stacks + 1);
                 effect.duration = 4.0;
             }
-            
+
             effects[existingIndex] = effect;
         } else {
             // 新增狀態
             let duration = 4.0;
             if (type === 'stun') duration = 1.0;
             if (type === 'frozen') duration = 2.0;
-            
+
             effects.push({
                 type,
                 stacks: 1,
@@ -77,18 +77,18 @@ export class BattleHandler {
         let totalDamage = 0;
         const logs: string[] = [];
         const floatTexts: any[] = [];
-        
+
         // 為了安全遍歷，使用 map 處理後 filter
         currentEffects = currentEffects.map(effect => {
             // 減少持續時間 (假設 tick 為 0.1s)
             effect.duration -= 0.1;
-            
+
             // 處理 DoT (每 1 秒觸發一次)
             if (effect.type === 'poison' || effect.type === 'burn' || effect.type === 'bleed') {
                 effect.tickTimer += 0.1;
                 if (effect.tickTimer >= 1.0) {
                     effect.tickTimer = 0; // Reset timer
-                    
+
                     let dmg = 0;
                     const maxHp = entity.maxHp || entity.baseMaxHp || 100; // Fallback
 
@@ -108,7 +108,7 @@ export class BattleHandler {
                     totalDamage += dmg;
                 }
             }
-            
+
             return effect;
         }).filter(effect => effect.duration > 0);
 
@@ -121,13 +121,13 @@ export class BattleHandler {
         if (bleed) {
             const maxHp = entity.maxHp || entity.baseMaxHp || 100;
             const dmg = Math.floor(maxHp * 0.02 * bleed.stacks);
-            
+
             result.logs.push(`${isPlayer ? '你' : entity.name} 因劇烈動作觸發流血，受到 ${dmg} 傷害！`);
-            result.floatingTexts.push({ 
-                text: `🩸${dmg}`, 
-                type: 'damage', 
-                target: isPlayer ? 'player' : 'monster', 
-                color: 'text-red-600' 
+            result.floatingTexts.push({
+                text: `🩸${dmg}`,
+                type: 'damage',
+                target: isPlayer ? 'player' : 'monster',
+                color: 'text-red-600'
             });
 
             if (isPlayer) {
@@ -145,11 +145,11 @@ export class BattleHandler {
     }
 
     // --- 主要公開方法 ---
-    
+
     // 1. 處理時間流逝 (包含 ATB, Cooldowns, 狀態異常 Tick)
     static processGameTick(player: any, monster: any, currentSkillCD: number, currentWeaponCD: number): BattleTickResult {
         const stats = calculateStats(player);
-        
+
         // 處理狀態異常 Tick
         const pStatus = this.processEntityStatus(player, true);
         const mStatus = this.processEntityStatus(monster, false);
@@ -187,8 +187,8 @@ export class BattleHandler {
         }
 
         return {
-            playerAtbDelta: isPlayerStopped ? 0 : stats.speed * 0.15,
-            monsterAtbDelta: isMonsterStopped ? 0 : monster.speed * 0.15,
+            playerAtbDelta: isPlayerStopped ? 0 : stats.speed * 0.1,
+            monsterAtbDelta: isMonsterStopped ? 0 : monster.speed * 0.1,
             skillCdDelta: Math.max(0, currentSkillCD - 0.1) - currentSkillCD,
             weaponCdDelta: Math.max(0, currentWeaponCD - 0.1) - currentWeaponCD,
             tickResult
@@ -235,14 +235,16 @@ export class BattleHandler {
         }
 
         // --- Affix Effects (Combat Stats: Crit, etc.) ---
-        let critChance = 0.05; // Base 5%
+        // 使用 stats.critChance 作為基礎，包含 AGI 加成
+        let critChance = stats.critChance;
         let critDamageMult = 1.5; // Base 150%
 
-        // Rogue Base
+        // Rogue Base (職業額外加成)
         if (player.classKey === 'rogue') {
-            critChance += 0.15; // Rogue base +15%
+            critChance += 0.15;
         }
 
+        // 裝備詞綴加成
         const equippedItems = [player.weapon, player.armor].filter(Boolean);
         equippedItems.forEach((item: Item) => {
             if (item.affixes) {
@@ -256,6 +258,8 @@ export class BattleHandler {
             }
         });
 
+        // 暴擊判定 (上限 100%)
+        critChance = Math.min(1, critChance);
         if (Math.random() < critChance) {
             isCrit = true;
             physicalDmg *= critDamageMult;
@@ -266,7 +270,7 @@ export class BattleHandler {
 
         // --- 狀態異常傷害計算 (對怪物) ---
         const mEffects = monster.statusEffects || [];
-        
+
         // 1. 燃燒增傷 (+4% per stack)
         const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
         if (burnEffect) {
@@ -280,14 +284,16 @@ export class BattleHandler {
             rawDmg *= 2;
             result.floatingTexts.push({ text: 'Shatter!', type: 'crit', target: 'monster' });
             result.logs.push('冰凍碎裂！造成雙倍傷害！');
-            
+
             // 移除冰凍
             const newEffects = [...mEffects];
             newEffects.splice(frozenIndex, 1);
             result.monsterUpdates!.statusEffects = newEffects;
         }
 
-        playerDmg = Math.max(1, Math.floor(rawDmg));
+        // 使用減傷公式計算最終傷害
+        const monsterDef = monster.def || 0;
+        playerDmg = calculateDamage(rawDmg, monsterDef);
         const newMonsterHp = (result.monsterUpdates?.hp ?? monster.hp) - playerDmg;
 
         // 更新結果
@@ -296,11 +302,11 @@ export class BattleHandler {
             type: isCrit ? 'crit' : 'damage',
             target: 'monster'
         });
-        
+
         result.logs.push(`你對 ${monster.name} 造成 ${playerDmg} 點傷害！`);
         result.effects = { monsterShake: true, hitFlash: true };
         result.monsterUpdates!.hp = Math.max(0, newMonsterHp);
-        
+
         if (playerDmg > (player.maxDamage || 0)) {
             result.playerUpdates!.maxDamage = playerDmg;
         }
@@ -326,10 +332,10 @@ export class BattleHandler {
                     }
                     // 放血
                     if (affix.passiveEffect === 'bleed_on_hit') {
-                         const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects;
-                         const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'bleed');
-                         result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
-                         result.floatingTexts.push({ text: '🩸Bleed', type: 'crit', target: 'monster', color: 'text-red-600' });
+                        const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects;
+                        const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'bleed');
+                        result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                        result.floatingTexts.push({ text: '🩸Bleed', type: 'crit', target: 'monster', color: 'text-red-600' });
                     }
                 }
             });
@@ -355,14 +361,15 @@ export class BattleHandler {
             result.logs.push(`${monster.name} 無法行動！`);
             return result;
         }
-        
+
         // 處理流血反噬 (怪物也會受傷)
         this.applyBleedSelfDamage(monster, result, false);
         if (result.monsterDied) return result; // 如果流血致死，中止攻擊
 
-        // 閃避計算 (Base + Affixes)
-        let dodgeChance = (stats.speed - monster.speed) * 0.02;
-        
+        // 閃避計算 (使用 stats.dodgeChance 作為基礎，包含 AGI 加成)
+        let dodgeChance = stats.dodgeChance;
+
+        // 裝備詞綴額外加成
         const equippedItems = [player.weapon, player.armor].filter(Boolean);
         equippedItems.forEach((item: Item) => {
             if (item.affixes) {
@@ -374,8 +381,9 @@ export class BattleHandler {
                 });
             }
         });
-        
-        dodgeChance = Math.min(0.75, dodgeChance); // Cap dodge at 75%
+
+        // 上下限 5% ~ 95%
+        dodgeChance = Math.min(0.95, Math.max(0.05, dodgeChance));
 
         if (Math.random() < dodgeChance) {
             result.floatingTexts.push({ text: 'MISS', type: 'miss', target: 'player' });
@@ -383,8 +391,8 @@ export class BattleHandler {
             return result;
         }
 
-        // 傷害計算
-        let damage = Math.max(1, Math.floor(monster.atk * (100 / (100 + stats.def))));
+        // 傷害計算 (使用減傷公式)
+        let damage = calculateDamage(monster.atk, stats.def);
 
         // --- 狀態異常傷害計算 (對玩家) ---
         const pEffects = player.statusEffects || [];
@@ -401,7 +409,7 @@ export class BattleHandler {
             damage *= 2;
             result.floatingTexts.push({ text: 'Shatter!', type: 'damage', target: 'player' });
             result.logs.push('你身上的冰凍碎裂了！受到雙倍傷害！');
-            
+
             const newEffects = [...pEffects];
             newEffects.splice(frozenIndex, 1);
             result.playerUpdates!.statusEffects = newEffects;
@@ -438,7 +446,7 @@ export class BattleHandler {
 
         // --- Affix Effects (When Hit / Thorns) ---
         if (!result.playerDied) {
-             equippedItems.forEach((item: Item) => {
+            equippedItems.forEach((item: Item) => {
                 if (item.affixes) {
                     item.affixes.forEach(affixId => {
                         const affix = AFFIXES[affixId];
@@ -446,10 +454,10 @@ export class BattleHandler {
                             const reflectDmg = Math.max(1, Math.floor(damage * affix.value));
                             const curMonHp = result.monsterUpdates?.hp ?? monster.hp;
                             const newMonHp = Math.max(0, curMonHp - reflectDmg);
-                            
+
                             result.monsterUpdates!.hp = newMonHp;
                             result.floatingTexts.push({ text: `⚡${reflectDmg}`, type: 'damage', target: 'monster', color: 'text-yellow-400' });
-                            
+
                             if (newMonHp <= 0) result.monsterDied = true;
                         }
                     });
@@ -464,7 +472,7 @@ export class BattleHandler {
     static calculateWeaponArt(player: any, monster: any): BattleResult | null {
         // ... (Keep existing implementation for calculateWeaponArt)
         if (!player.weapon) return null;
-        
+
         const stats = calculateStats(player);
         const art = WEAPON_ARTS[player.weapon.category];
         if (!art) return null;
@@ -480,11 +488,11 @@ export class BattleHandler {
 
         // 處理流血反噬
         this.applyBleedSelfDamage(player, result, true);
-        if (result.playerDied) return result; 
+        if (result.playerDied) return result;
 
         if (player.weapon.category === 'sword') {
             const dmg = Math.floor(stats.atk * 0.5);
-            
+
             // 戰技計算狀態 (示範：劍類戰技有機率附加燃燒)
             if (Math.random() < 0.5) {
                 const newEffects = this.applyStatus(monster, 'burn');
@@ -495,28 +503,28 @@ export class BattleHandler {
 
             // 傷害計算 (需考慮怪物身上的現有狀態)
             let finalDmg = dmg;
-             const mEffects = monster.statusEffects || []; 
-            
-             const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
-             if (burnEffect) finalDmg = Math.floor(finalDmg * (1 + 0.04 * burnEffect.stacks));
+            const mEffects = monster.statusEffects || [];
 
-             const frozenIndex = mEffects.findIndex((e: StatusEffect) => e.type === 'frozen');
-             if (frozenIndex >= 0) {
-                 finalDmg *= 2;
-                 result.floatingTexts.push({ text: 'Shatter!', type: 'crit', target: 'monster' });
-                 
-                 let effectsToUpdate = result.monsterUpdates!.statusEffects || [...mEffects];
-                 effectsToUpdate = effectsToUpdate.filter(e => e.type !== 'frozen');
-                 result.monsterUpdates!.statusEffects = effectsToUpdate;
-             }
+            const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
+            if (burnEffect) finalDmg = Math.floor(finalDmg * (1 + 0.04 * burnEffect.stacks));
+
+            const frozenIndex = mEffects.findIndex((e: StatusEffect) => e.type === 'frozen');
+            if (frozenIndex >= 0) {
+                finalDmg *= 2;
+                result.floatingTexts.push({ text: 'Shatter!', type: 'crit', target: 'monster' });
+
+                let effectsToUpdate = result.monsterUpdates!.statusEffects || [...mEffects];
+                effectsToUpdate = effectsToUpdate.filter(e => e.type !== 'frozen');
+                result.monsterUpdates!.statusEffects = effectsToUpdate;
+            }
 
             const newMonsterHp = (result.monsterUpdates?.hp ?? monster.hp) - finalDmg;
-            
+
             result.monsterUpdates!.hp = Math.max(0, newMonsterHp);
             result.effects = { monsterShake: true, hitFlash: true };
             result.floatingTexts.push({ text: `-${finalDmg}`, type: 'damage', target: 'monster' });
             result.logs.push(`⚔️ ${art.name}！造成 ${finalDmg} 點快速傷害！`);
-            
+
             if (finalDmg > (player.maxDamage || 0)) {
                 result.playerUpdates!.maxDamage = finalDmg;
             }
@@ -527,13 +535,13 @@ export class BattleHandler {
             result.playerUpdates!.shield = (player.shield || 0) + shieldGain;
             result.floatingTexts.push({ text: `+${shieldGain}`, type: 'shield', target: 'player' });
             result.logs.push(`⚔️ ${art.name}！獲得 ${shieldGain} 點護盾！`);
-            
+
             // 法杖戰技：附加冰凍
             if (Math.random() < 0.8) {
-                 const newEffects = this.applyStatus(monster, 'frozen');
-                 result.monsterUpdates!.statusEffects = newEffects;
-                 result.logs.push(`${monster.name} 被凍結了！`);
-                 result.floatingTexts.push({ text: '❄️Frozen', type: 'crit', target: 'monster' });
+                const newEffects = this.applyStatus(monster, 'frozen');
+                result.monsterUpdates!.statusEffects = newEffects;
+                result.logs.push(`${monster.name} 被凍結了！`);
+                result.floatingTexts.push({ text: '❄️Frozen', type: 'crit', target: 'monster' });
             }
         }
 
@@ -546,7 +554,7 @@ export class BattleHandler {
         const stats = calculateStats(player);
         const classData = CLASSES[player.classKey];
         const skill = CLASS_SKILLS[classData.skillId];
-        
+
         const result: BattleResult = {
             logs: [],
             floatingTexts: [],
@@ -555,7 +563,7 @@ export class BattleHandler {
             monsterUpdates: {},
             cooldowns: { skill: skill.cooldown || 5 }
         };
-        
+
         // 處理流血反噬
         this.applyBleedSelfDamage(player, result, true);
         if (result.playerDied) return result;
@@ -578,7 +586,7 @@ export class BattleHandler {
                 result.floatingTexts.push({ text: 'CRIT!', type: 'crit', target: 'monster' });
                 skillLog = `${skill.name}精準命中弱點，造成 ${skillDmg} 傷害並中毒感染！`;
                 result.monsterUpdates!.statusEffects = this.applyStatus(monster, 'poison');
-                result.monsterUpdates!.statusEffects = this.applyStatus({statusEffects: result.monsterUpdates!.statusEffects}, 'poison'); // 雙層毒
+                result.monsterUpdates!.statusEffects = this.applyStatus({ statusEffects: result.monsterUpdates!.statusEffects }, 'poison'); // 雙層毒
                 result.floatingTexts.push({ text: '🧪Poison', type: 'crit', target: 'monster' });
                 break;
             case 'mage':
@@ -593,18 +601,18 @@ export class BattleHandler {
                 const currentHp = result.playerUpdates!.hp ?? player.hp;
                 const hpCost = Math.floor(player.hp * 0.2);
                 result.playerUpdates!.hp = currentHp - hpCost;
-                
+
                 result.floatingTexts.push({ text: `-${hpCost}`, type: 'damage', target: 'player' });
                 skillDmg = Math.floor(stats.atk * 3 + hpCost * 2);
                 skillLog = `犧牲 ${hpCost} 生命造成 ${skillDmg} 毀滅性傷害！`;
-                
+
                 if ((result.playerUpdates!.hp as number) <= 0) result.playerDied = true;
                 break;
         }
 
         // --- 傷害計算與狀態互動 ---
         const mEffects = monster.statusEffects || [];
-        
+
         // 燃燒增傷
         const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
         if (burnEffect) skillDmg = Math.floor(skillDmg * (1 + 0.04 * burnEffect.stacks));
@@ -614,7 +622,7 @@ export class BattleHandler {
         if (frozenIndex >= 0) {
             skillDmg *= 2;
             result.floatingTexts.push({ text: 'Shatter!', type: 'crit', target: 'monster' });
-            
+
             // 移除冰凍
             let effects = result.monsterUpdates!.statusEffects || [...mEffects];
             effects = effects.filter(e => e.type !== 'frozen');
@@ -637,15 +645,15 @@ export class BattleHandler {
 
     // 6. 使用藥水
     static usePotion(player: any): BattleResult {
-         const stats = calculateStats(player);
-         const healAmount = Math.floor(stats.maxHp * 0.5);
-         const newHp = Math.min(player.hp + healAmount, stats.maxHp);
-         
-         return {
-             logs: [`使用藥水恢復 ${healAmount} HP！`],
-             floatingTexts: [{ text: `+${healAmount}`, type: 'heal', target: 'player' }],
-             effects: {},
-             playerUpdates: { hp: newHp, potions: player.potions - 1 }
-         };
+        const stats = calculateStats(player);
+        const healAmount = Math.floor(stats.maxHp * 0.5);
+        const newHp = Math.min(player.hp + healAmount, stats.maxHp);
+
+        return {
+            logs: [`使用藥水恢復 ${healAmount} HP！`],
+            floatingTexts: [{ text: `+${healAmount}`, type: 'heal', target: 'player' }],
+            effects: {},
+            playerUpdates: { hp: newHp, potions: player.potions - 1 }
+        };
     }
 }

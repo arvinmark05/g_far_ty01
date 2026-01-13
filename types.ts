@@ -63,6 +63,7 @@ export interface Monster {
   hp: number;
   maxHp?: number;
   atk: number;
+  def: number;          // 怪物防禦值
   speed: number;
   gold: number;
   exp: number;
@@ -85,6 +86,8 @@ export interface PlayerStats {
   speed: number;
   maxShield: number;
   maxHp: number;
+  critChance: number;   // 0~1 (0~100%)
+  dodgeChance: number;  // 0.05~0.95 (5%~95%)
 }
 
 export interface FloatingText {

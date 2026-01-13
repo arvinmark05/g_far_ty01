@@ -8,7 +8,7 @@ import { MONSTERS, BOSS_MONSTERS } from '../data/monsters';
 import { EQUIPMENT } from '../data/items';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { CLASS_SKILLS, WEAPON_ARTS } from '../data/skills';
-import { calculateStats, getMonsterDrops, getItemDisplayName, getRefinedStat } from '../utils/gameFormulas';
+import { calculateStats, getMonsterDrops, getItemDisplayName, getRefinedStat, expToLevel } from '../utils/gameFormulas';
 import { BattleHandler, BattleResult } from '../utils/BattleHandler';
 import { FloatingText, StatusEffect, Item, StoryScript, GameFlags } from '../types';
 import { StoryHandler } from '../utils/StoryHandler';
@@ -522,7 +522,8 @@ export default function FantasyAdventure() {
       hp: Math.round(baseMonster.hp * depthMultiplier),
       maxHp: Math.round(baseMonster.hp * depthMultiplier),
       atk: Math.round(baseMonster.atk * depthMultiplier),
-      speed: Math.round(baseMonster.speed * depthMultiplier),
+      def: Math.round((baseMonster.def || 0) * depthMultiplier),
+      speed: Math.min(50, Math.round(baseMonster.speed * (1 + newDepth * 0.002))), // Speed 緩慢增長，上限 50
       gold: Math.round(baseMonster.gold * depthMultiplier),
       exp: Math.round(baseMonster.exp * depthMultiplier),
       isBoss: isBoss,
@@ -622,7 +623,7 @@ export default function FantasyAdventure() {
     let leveledUp = false;
 
     while (true) {
-      const expNeeded = currentLevel * 100;
+      const expNeeded = expToLevel(currentLevel);
       if (currentExp >= expNeeded) {
         currentLevel++;
         currentExp -= expNeeded;
@@ -1029,7 +1030,7 @@ export default function FantasyAdventure() {
               <h2 className="text-3xl font-bold text-purple-300 mb-4 text-center">📊 角色成長</h2>
               <div className="text-center text-yellow-300 text-xl mb-4 bg-purple-900/50 p-2 rounded-lg">剩餘點數: <span className="text-2xl font-bold">{player.statPoints}</span></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[{ key: 'str', name: 'STR (力量)', desc: '影響物理攻擊 (+2)', icon: '💪' }, { key: 'agi', name: 'AGI (敏捷)', desc: '影響出手速度與閃避', icon: '⚡' }, { key: 'vit', name: 'VIT (體質)', desc: 'HP(+12), 防禦(+1.5), 護盾(+5)', icon: '❤️' }, { key: 'int', name: 'INT (智力)', desc: '影響魔法與技能傷害 (+3)', icon: '🔮' }].map(stat => (
+                {[{ key: 'str', name: 'STR (力量)', desc: '影響物理攻擊、並提供些微防禦', icon: '💪' }, { key: 'agi', name: 'AGI (敏捷)', desc: '影響速度、閃避與暴擊', icon: '⚡' }, { key: 'vit', name: 'VIT (體質)', desc: '增加HP與防禦', icon: '❤️' }, { key: 'int', name: 'INT (智力)', desc: '增加魔法傷害、些微的閃避與暴擊', icon: '🔮' }].map(stat => (
                   <div key={stat.key} className="bg-purple-900/30 p-4 rounded-lg flex items-center justify-between border border-purple-500/20">
                     <div><div className="text-white font-bold text-lg flex items-center gap-2">{stat.icon} {stat.name}</div><div className="text-purple-300 text-xs mt-1">{stat.desc}</div></div>
                     <div className="flex items-center gap-3"><span className="text-2xl font-bold">{player[stat.key]}</span><button onClick={() => allocateStat(stat.key)} disabled={player.statPoints <= 0} className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-all ${player.statPoints > 0 ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/50' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>+</button></div>
@@ -1083,8 +1084,8 @@ export default function FantasyAdventure() {
                 <div className="bg-cyan-900/30 p-1.5 rounded-lg border border-cyan-500/20"><div className="flex items-center gap-1 text-cyan-300 text-[10px] mb-0.5"><Wind className="w-3 h-3" /> SPD</div><div className="text-white font-bold text-sm">{stats.speed}</div></div>
               </div>
               <div className="relative pt-1">
-                <div className="flex justify-between text-xs text-green-300 mb-1"><span>EXP</span><span>{Math.floor((player.exp / (player.level * 100)) * 100)}% <span className="text-gray-400">({player.exp}/{player.level * 100})</span></span></div>
-                <div className="bg-green-900/30 rounded-full h-1.5 overflow-hidden"><div className="bg-green-400 h-full transition-all duration-300 shadow-[0_0_10px_rgba(74,222,128,0.5)]" style={{ width: `${(player.exp / (player.level * 100)) * 100}%` }} /></div>
+                <div className="flex justify-between text-xs text-green-300 mb-1"><span>EXP</span><span>{Math.floor((player.exp / expToLevel(player.level)) * 100)}% <span className="text-gray-400">({player.exp}/{expToLevel(player.level)})</span></span></div>
+                <div className="bg-green-900/30 rounded-full h-1.5 overflow-hidden"><div className="bg-green-400 h-full transition-all duration-300 shadow-[0_0_10px_rgba(74,222,128,0.5)]" style={{ width: `${(player.exp / expToLevel(player.level)) * 100}%` }} /></div>
               </div>
               <div className="mt-4 pt-3 border-t border-green-500/20">
                 <div className="text-xs text-green-300 mb-2 font-bold">目前裝備</div>
@@ -1366,9 +1367,9 @@ export default function FantasyAdventure() {
                   {player.hp < stats.maxHp * 0.3 && (<div className="absolute inset-0 bg-red-500/20 animate-pulse"></div>)}
                 </div>
                 <div className="w-full mt-1">
-                  <div className="flex justify-between text-[10px] text-green-300 mb-0.5"><span>EXP</span><span>{Math.floor((player.exp / (player.level * 100)) * 100)}% <span className="text-gray-500">({player.exp}/{player.level * 100})</span></span></div>
+                  <div className="flex justify-between text-[10px] text-green-300 mb-0.5"><span>EXP</span><span>{Math.floor((player.exp / expToLevel(player.level)) * 100)}% <span className="text-gray-500">({player.exp}/{expToLevel(player.level)})</span></span></div>
                   <div className="bg-green-900/30 rounded-full h-1 overflow-hidden">
-                    <div className="bg-green-400 h-full transition-all duration-300" style={{ width: `${(player.exp / (player.level * 100)) * 100}%` }} />
+                    <div className="bg-green-400 h-full transition-all duration-300" style={{ width: `${(player.exp / expToLevel(player.level)) * 100}%` }} />
                   </div>
                 </div>
               </div>
