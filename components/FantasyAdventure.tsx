@@ -209,7 +209,7 @@ export default function FantasyAdventure() {
     }, 300);
   }
 
-  const addFloatingText = (text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'shield', isPlayerTarget: boolean, colorOverride?: string) => {
+  const addFloatingText = (text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'shield' | 'poison' | 'burn' | 'stun' | 'frozen' | 'bleed' | 'buff', isPlayerTarget: boolean, colorOverride?: string) => {
     const id = floatingTextIdRef.current++;
     let color = colorOverride || 'text-white';
     let size = 'text-xl';
@@ -220,6 +220,12 @@ export default function FantasyAdventure() {
       if (type === 'heal') color = 'text-green-400';
       if (type === 'miss') color = 'text-gray-400';
       if (type === 'shield') color = 'text-blue-400';
+      if (type === 'poison') { color = 'text-green-500'; size = 'text-2xl'; }
+      if (type === 'burn') { color = 'text-orange-500'; size = 'text-2xl'; }
+      if (type === 'stun') { color = 'text-yellow-300'; size = 'text-2xl'; }
+      if (type === 'frozen') { color = 'text-cyan-400'; size = 'text-2xl'; }
+      if (type === 'bleed') { color = 'text-red-600'; size = 'text-2xl'; }
+      if (type === 'buff') { color = 'text-yellow-400'; size = 'text-2xl font-bold'; }
     }
 
     let startX = 50;

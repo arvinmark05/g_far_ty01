@@ -109,6 +109,9 @@ export const calculateStats = (player: any): PlayerStats => {
     let bonusAgi = 0;
     let bonusVit = 0;
     let bonusInt = 0;
+    let bonusDodge = 0;
+    let bonusCritChance = 0;
+    let bonusCritDamage = 0;
 
     const equippedItems = [player.weapon, player.armor].filter(Boolean);
 
@@ -123,6 +126,18 @@ export const calculateStats = (player: any): PlayerStats => {
                     if (affix.stat === 'int') bonusInt += affix.value;
                 }
             });
+        }
+
+        // 處理防具 armorEffect 內建屬性加成
+        if (item.armorEffect) {
+            const ae = item.armorEffect;
+            if (ae.bonusStr) bonusStr += ae.bonusStr;
+            if (ae.bonusAgi) bonusAgi += ae.bonusAgi;
+            if (ae.bonusVit) bonusVit += ae.bonusVit;
+            if (ae.bonusInt) bonusInt += ae.bonusInt;
+            if (ae.bonusDodge) bonusDodge += ae.bonusDodge;
+            if (ae.bonusCritChance) bonusCritChance += ae.bonusCritChance;
+            if (ae.bonusCritDamage) bonusCritDamage += ae.bonusCritDamage;
         }
     });
 
@@ -159,8 +174,9 @@ export const calculateStats = (player: any): PlayerStats => {
         speed: Math.floor(baseSpeed * (1 + finalAgi * 0.05)),
         maxHp: Math.floor(baseHp * (1 + vitCorr * 1.5)),
         maxShield: Math.floor(intCorr * 250),
-        critChance: Math.min(1, Math.max(0, baseCrit * (1 + (finalAgi * 0.1) + (finalInt * 0.025)))),
-        dodgeChance: Math.min(0.95, Math.max(0.05, (agiCorr * 0.4) + (intCorr * 0.1)))
+        critChance: Math.min(1, Math.max(0, baseCrit * (1 + (finalAgi * 0.1) + (finalInt * 0.025)) + bonusCritChance)),
+        critDamage: 1.5 + bonusCritDamage, // 暴擊傷害倍率
+        dodgeChance: Math.min(0.95, Math.max(0.05, (agiCorr * 0.4) + (intCorr * 0.1) + bonusDodge))
     };
 };
 

@@ -2,14 +2,14 @@
 import { calculateStats, getRefinedStat, calculateDamage } from './gameFormulas';
 import { CLASS_SKILLS, WEAPON_ARTS } from '../data/skills';
 import { CLASSES } from '../data/classes';
-import { FloatingText, StatusEffect, StatusType, Item } from '../types';
+import { FloatingText, StatusEffect, StatusType, BuffEffect, BuffType, Item, Skill } from '../types';
 import { AFFIXES } from '../data/affixes';
 
 export interface BattleResult {
     playerUpdates?: Partial<any>; // hp, shield, maxDamage...
     monsterUpdates?: Partial<any>; // hp...
     logs: string[];
-    floatingTexts: { text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'shield', target: 'player' | 'monster', color?: string }[];
+    floatingTexts: { text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'shield' | 'poison' | 'burn' | 'stun' | 'frozen' | 'bleed' | 'buff', target: 'player' | 'monster', color?: string }[];
     effects: { screenShake?: boolean, monsterShake?: boolean, hitFlash?: boolean };
     cooldowns?: { skill?: number, weapon?: number };
     atbReset?: 'player' | 'monster';
@@ -28,10 +28,72 @@ export interface BattleTickResult {
 
 export class BattleHandler {
 
+    // --- Buff 系統核心邏輯 ---
+
+    // 施加 Buff
+    static applyBuff(entity: any, type: BuffType, duration: number = 4, consumeOnTrigger: boolean = true): BuffEffect[] {
+        const buffs = [...(entity.buffs || [])];
+        const existingIndex = buffs.findIndex(b => b.type === type);
+
+        if (existingIndex >= 0) {
+            // 已存在，刷新持續時間
+            const buff = { ...buffs[existingIndex] };
+            buff.duration = duration;
+            buff.stacks = Math.min(5, buff.stacks + 1);
+            buffs[existingIndex] = buff;
+        } else {
+            // 新增 Buff
+            buffs.push({
+                type,
+                stacks: 1,
+                duration,
+                consumeOnTrigger
+            });
+        }
+        return buffs;
+    }
+
+    // 消耗 Buff（觸發後移除）
+    static consumeBuff(entity: any, type: BuffType): { buffs: BuffEffect[], consumed: boolean } {
+        const buffs = [...(entity.buffs || [])];
+        const index = buffs.findIndex(b => b.type === type);
+
+        if (index >= 0 && buffs[index].consumeOnTrigger) {
+            buffs.splice(index, 1);
+            return { buffs, consumed: true };
+        }
+        return { buffs, consumed: false };
+    }
+
+    // 檢查是否有指定 Buff
+    static hasBuff(entity: any, type: BuffType): boolean {
+        return entity.buffs?.some((b: BuffEffect) => b.type === type) ?? false;
+    }
+
+    // 處理 Buff Tick（減少持續時間，處理加速等效果）
+    static processBuffTick(entity: any): { buffs: BuffEffect[], speedMultiplier: number } {
+        let buffs = [...(entity.buffs || [])];
+        let speedMultiplier = 1.0;
+
+        buffs = buffs.map(buff => {
+            // 減少持續時間
+            buff.duration -= 0.1;
+
+            // 加速效果
+            if (buff.type === 'haste') {
+                speedMultiplier = 1.5;
+            }
+
+            return buff;
+        }).filter(buff => buff.duration > 0);
+
+        return { buffs, speedMultiplier };
+    }
+
     // --- 狀態異常核心邏輯 ---
 
     // 施加狀態
-    static applyStatus(entity: any, type: StatusType): StatusEffect[] {
+    static applyStatus(entity: any, type: StatusType, customDuration?: number): StatusEffect[] {
         const effects = [...(entity.statusEffects || [])];
         const existingIndex = effects.findIndex(e => e.type === type);
 
@@ -41,25 +103,27 @@ export class BattleHandler {
 
             if (type === 'poison') {
                 effect.stacks = Math.min(10, effect.stacks + 1);
-                effect.duration = 4.0;
+                effect.duration = customDuration ?? 4.0;
             } else if (type === 'burn') {
                 effect.stacks = Math.min(3, effect.stacks + 1);
-                effect.duration = 4.0;
+                effect.duration = customDuration ?? 4.0;
             } else if (type === 'stun') {
-                effect.duration = 1.0; // 不疊加，僅刷新
+                effect.duration = customDuration ?? 1.0; // 不疊加，僅刷新
             } else if (type === 'frozen') {
-                effect.duration = 2.0; // 不疊加，僅刷新
+                effect.duration = customDuration ?? 2.0; // 不疊加，僅刷新
             } else if (type === 'bleed') {
                 effect.stacks = Math.min(5, effect.stacks + 1);
-                effect.duration = 4.0;
+                effect.duration = customDuration ?? 4.0;
             }
 
             effects[existingIndex] = effect;
         } else {
             // 新增狀態
-            let duration = 4.0;
-            if (type === 'stun') duration = 1.0;
-            if (type === 'frozen') duration = 2.0;
+            let duration = customDuration ?? 4.0;
+            if (!customDuration) {
+                if (type === 'stun') duration = 1.0;
+                if (type === 'frozen') duration = 2.0;
+            }
 
             effects.push({
                 type,
@@ -146,7 +210,7 @@ export class BattleHandler {
 
     // --- 主要公開方法 ---
 
-    // 1. 處理時間流逝 (包含 ATB, Cooldowns, 狀態異常 Tick)
+    // 1. 處理時間流逝 (包含 ATB, Cooldowns, 狀態異常 Tick, Buff Tick)
     static processGameTick(player: any, monster: any, currentSkillCD: number, currentWeaponCD: number): BattleTickResult {
         const stats = calculateStats(player);
 
@@ -154,18 +218,23 @@ export class BattleHandler {
         const pStatus = this.processEntityStatus(player, true);
         const mStatus = this.processEntityStatus(monster, false);
 
+        // 處理 Buff Tick
+        const pBuffResult = this.processBuffTick(player);
+
         // 檢查是否無法行動 (Stun / Frozen)
         const isPlayerStopped = pStatus.effects.some(e => e.type === 'stun' || e.type === 'frozen');
         const isMonsterStopped = mStatus.effects.some(e => e.type === 'stun' || e.type === 'frozen');
 
         // 構建 DoT 結果
         let tickResult: BattleResult | undefined = undefined;
-        if (pStatus.damage > 0 || mStatus.damage > 0 || pStatus.effects.length !== (player.statusEffects?.length || 0) || mStatus.effects.length !== (monster.statusEffects?.length || 0)) {
+        const buffChanged = pBuffResult.buffs.length !== (player.buffs?.length || 0);
+
+        if (pStatus.damage > 0 || mStatus.damage > 0 || pStatus.effects.length !== (player.statusEffects?.length || 0) || mStatus.effects.length !== (monster.statusEffects?.length || 0) || buffChanged) {
             tickResult = {
                 logs: [...pStatus.logs, ...mStatus.logs],
                 floatingTexts: [...pStatus.floatTexts, ...mStatus.floatTexts],
                 effects: {},
-                playerUpdates: { statusEffects: pStatus.effects },
+                playerUpdates: { statusEffects: pStatus.effects, buffs: pBuffResult.buffs },
                 monsterUpdates: { statusEffects: mStatus.effects }
             };
 
@@ -186,8 +255,11 @@ export class BattleHandler {
             }
         }
 
+        // 加速 Buff 影響速度
+        const playerSpeedMult = pBuffResult.speedMultiplier;
+
         return {
-            playerAtbDelta: isPlayerStopped ? 0 : stats.speed * 0.1,
+            playerAtbDelta: isPlayerStopped ? 0 : stats.speed * 0.1 * playerSpeedMult,
             monsterAtbDelta: isMonsterStopped ? 0 : monster.speed * 0.1,
             skillCdDelta: Math.max(0, currentSkillCD - 0.1) - currentSkillCD,
             weaponCdDelta: Math.max(0, currentWeaponCD - 0.1) - currentWeaponCD,
@@ -195,7 +267,7 @@ export class BattleHandler {
         };
     }
 
-    // 2. 計算玩家普通攻擊 (包含被動、暴擊、燃燒加成、冰凍加成與移除)
+    // 2. 計算玩家普通攻擊 (包含被動、暴擊、燃燒加成、冰凍加成與移除、連擊 Buff)
     static calculatePlayerAttack(player: any, monster: any): BattleResult {
         const stats = calculateStats(player);
         const result: BattleResult = {
@@ -217,27 +289,115 @@ export class BattleHandler {
         this.applyBleedSelfDamage(player, result, true);
         if (result.playerDied) return result; // 如果流血致死，中止攻擊
 
-        let playerDmg = 0;
+        // === 執行攻擊邏輯 (支援連擊 Buff) ===
+        const hasDoubleStrike = this.hasBuff(player, 'double_strike');
+        const hitCount = hasDoubleStrike ? 2 : 1;
+
+        // 如果有連擊 Buff，消耗它
+        if (hasDoubleStrike) {
+            const consumeResult = this.consumeBuff(player, 'double_strike');
+            result.playerUpdates!.buffs = consumeResult.buffs;
+            result.logs.push('連擊發動！');
+            result.floatingTexts.push({ text: '連擊！', type: 'buff', target: 'player', color: 'text-yellow-400' });
+        }
+
+        let totalDamage = 0;
+        for (let hit = 0; hit < hitCount; hit++) {
+            const hitResult = this.calculateSingleAttack(player, monster, stats, result, hit + 1);
+            totalDamage += hitResult.damage;
+
+            // 更新怪物 HP
+            if (hitResult.newMonsterHp !== undefined) {
+                result.monsterUpdates!.hp = hitResult.newMonsterHp;
+                if (hitResult.newMonsterHp <= 0) {
+                    result.monsterDied = true;
+                    break; // 怪物死亡，停止連擊
+                }
+            }
+        }
+
+        // 更新最大傷害記錄
+        if (totalDamage > (player.maxDamage || 0)) {
+            result.playerUpdates!.maxDamage = totalDamage;
+        }
+
+        return result;
+    }
+
+    // Helper: 計算單次攻擊
+    private static calculateSingleAttack(player: any, monster: any, stats: any, result: BattleResult, hitNumber: number): { damage: number, newMonsterHp?: number } {
         let attackType = '普通攻擊';
         let isCrit = false;
         let physicalDmg = stats.atk;
         let magicalDmg = 0;
+        let defPenetration = 0;
+        let shouldApplyStatus: StatusType | null = null;
+        let statusDuration: number | undefined = undefined;
+        let atbOnCrit = 0;
+        let defenseReverse = false;
+        let agiAtkRatio = 0;
+        let healIntRatio = 0;
 
         // 武器特效被動
-        if (player.weapon && player.weapon.skill) {
-            const skill = player.weapon.skill;
-            if (Math.random() < (skill.triggerRate || 0)) {
+        const skill: Skill | undefined = player.weapon?.skill;
+        if (skill) {
+            const isTriggerType = !skill.passiveType || skill.passiveType === 'trigger';
+
+            if (isTriggerType) {
+                // 觸發類被動
+                if (Math.random() < (skill.triggerRate || 0)) {
+                    attackType = skill.name;
+                    physicalDmg = stats.atk * (skill.atkMultiplier || 0);
+                    magicalDmg = stats.matk * (skill.matkMultiplier || 0);
+                    if (skill.atkMultiplier === 0) physicalDmg = 0;
+
+                    // 觸發類的附加效果
+                    if (skill.continuousEffect?.applyStatus) {
+                        shouldApplyStatus = skill.continuousEffect.applyStatus;
+                    }
+                    if (skill.continuousEffect?.defPenetration) {
+                        defPenetration = skill.continuousEffect.defPenetration;
+                    }
+                    if (skill.continuousEffect?.atbOnCrit) {
+                        atbOnCrit = skill.continuousEffect.atbOnCrit;
+                    }
+                    if (skill.continuousEffect?.defenseReverse) {
+                        defenseReverse = true;
+                    }
+                    if (skill.continuousEffect?.agiAtkRatio) {
+                        agiAtkRatio = skill.continuousEffect.agiAtkRatio;
+                    }
+                    if (skill.continuousEffect?.healIntRatio) {
+                        healIntRatio = skill.continuousEffect.healIntRatio;
+                    }
+                }
+            } else {
+                // 持續效果類被動 (每次攻擊都觸發)
                 attackType = skill.name;
-                physicalDmg = stats.atk * (skill.atkMultiplier || 0);
-                magicalDmg = stats.matk * (skill.matkMultiplier || 0);
-                if (skill.atkMultiplier === 0) physicalDmg = 0;
+                if (skill.continuousEffect?.applyStatus) {
+                    shouldApplyStatus = skill.continuousEffect.applyStatus;
+                    statusDuration = skill.continuousEffect.statusDuration;
+                }
+                if (skill.continuousEffect?.bonusMatkRatio) {
+                    magicalDmg = stats.matk * skill.continuousEffect.bonusMatkRatio;
+                }
+                if (skill.continuousEffect?.defPenetration) {
+                    defPenetration = skill.continuousEffect.defPenetration;
+                }
+                if (skill.continuousEffect?.atbOnCrit) {
+                    atbOnCrit = skill.continuousEffect.atbOnCrit;
+                }
             }
         }
 
+        // AGI 傷害加成
+        if (agiAtkRatio > 0) {
+            physicalDmg += player.agi * agiAtkRatio;
+        }
+
         // --- Affix Effects (Combat Stats: Crit, etc.) ---
-        // 使用 stats.critChance 作為基礎，包含 AGI 加成
         let critChance = stats.critChance;
-        let critDamageMult = 1.5; // Base 150%
+        let critDamageMult = stats.critDamage || 1.5; // 使用計算後的暴擊傷害倍率
 
         // Rogue Base (職業額外加成)
         if (player.classKey === 'rogue') {
@@ -264,12 +424,18 @@ export class BattleHandler {
             isCrit = true;
             physicalDmg *= critDamageMult;
             attackType += ' (暴擊)';
+
+            // 暴擊觸發 ATB 充能
+            if (atbOnCrit > 0) {
+                result.logs.push(`暴擊觸發 ATB 充能！`);
+                // ATB 充能會在 UI 層處理
+            }
         }
 
         let rawDmg = physicalDmg + magicalDmg;
 
         // --- 狀態異常傷害計算 (對怪物) ---
-        const mEffects = monster.statusEffects || [];
+        const mEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
 
         // 1. 燃燒增傷 (+4% per stack)
         const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
@@ -291,28 +457,47 @@ export class BattleHandler {
             result.monsterUpdates!.statusEffects = newEffects;
         }
 
-        // 使用減傷公式計算最終傷害
-        const monsterDef = monster.def || 0;
-        playerDmg = calculateDamage(rawDmg, monsterDef);
-        const newMonsterHp = (result.monsterUpdates?.hp ?? monster.hp) - playerDmg;
+        // 使用減傷公式計算最終傷害（考慮防禦穿透和防禦轉增傷）
+        let monsterDef = (monster.def || 0) * (1 - defPenetration);
+        let playerDmg: number;
+
+        if (defenseReverse && monsterDef > 0) {
+            // 防禦轉為增傷：原本的減傷比例變成增傷比例
+            const defReduction = monsterDef / (monsterDef + 100);
+            playerDmg = Math.floor(rawDmg * (1 + defReduction));
+            result.floatingTexts.push({ text: '破甲！', type: 'buff', target: 'monster', color: 'text-orange-400' });
+        } else {
+            playerDmg = calculateDamage(rawDmg, monsterDef);
+        }
+        const currentMonsterHp = result.monsterUpdates?.hp ?? monster.hp;
+        const newMonsterHp = Math.max(0, currentMonsterHp - playerDmg);
 
         // 更新結果
+        const hitLabel = hitNumber > 1 ? ` (${hitNumber}連)` : '';
         result.floatingTexts.push({
-            text: `-${playerDmg}`,
+            text: `-${playerDmg}${hitLabel}`,
             type: isCrit ? 'crit' : 'damage',
             target: 'monster'
         });
 
         result.logs.push(`你對 ${monster.name} 造成 ${playerDmg} 點傷害！`);
         result.effects = { monsterShake: true, hitFlash: true };
-        result.monsterUpdates!.hp = Math.max(0, newMonsterHp);
 
-        if (playerDmg > (player.maxDamage || 0)) {
-            result.playerUpdates!.maxDamage = playerDmg;
-        }
+        // --- 持續效果：施加狀態異常 ---
+        if (shouldApplyStatus && newMonsterHp > 0) {
+            const currentEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+            const newEffects = this.applyStatus({ statusEffects: currentEffects }, shouldApplyStatus, statusDuration);
+            result.monsterUpdates!.statusEffects = newEffects;
 
-        if (newMonsterHp <= 0) {
-            result.monsterDied = true;
+            const statusIcons: Record<StatusType, string> = {
+                'poison': '🧪Poison',
+                'burn': '🔥Burn',
+                'stun': '💫Stun',
+                'frozen': '❄️Frozen',
+                'bleed': '🩸Bleed'
+            };
+            result.floatingTexts.push({ text: statusIcons[shouldApplyStatus], type: 'crit', target: 'monster' });
+            result.logs.push(`${monster.name} 被附加了${shouldApplyStatus === 'poison' ? '中毒' : shouldApplyStatus === 'stun' ? '暈眩' : shouldApplyStatus}！`);
         }
 
         // --- Affix Effects (On Hit) ---
@@ -341,7 +526,44 @@ export class BattleHandler {
             });
         }
 
-        return result;
+        // --- Armor Built-in Affixes (On Hit) ---
+        if (player.armor?.armorEffect?.builtInAffixes) {
+            player.armor.armorEffect.builtInAffixes.forEach((affixId: string) => {
+                const affix = AFFIXES[affixId];
+                if (affix && affix.type === 'passive') {
+                    // 吸血
+                    if (affix.passiveEffect === 'life_steal') {
+                        const healAmount = Math.floor(playerDmg * 0.1);
+                        if (healAmount > 0) {
+                            const currentHp = result.playerUpdates?.hp ?? player.hp;
+                            const newHp = Math.min(stats.maxHp, currentHp + healAmount);
+                            result.playerUpdates = { ...result.playerUpdates, hp: newHp };
+                            result.floatingTexts.push({ text: `+${healAmount}`, type: 'heal', target: 'player' });
+                        }
+                    }
+                    // 放血
+                    if (affix.passiveEffect === 'bleed_on_hit') {
+                        const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                        const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'bleed');
+                        result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                        result.floatingTexts.push({ text: '🩸Bleed', type: 'crit', target: 'monster', color: 'text-red-600' });
+                    }
+                }
+            });
+        }
+
+        // INT 回血效果
+        if (healIntRatio > 0) {
+            const healAmount = Math.floor(player.int * healIntRatio);
+            if (healAmount > 0) {
+                const currentHp = result.playerUpdates?.hp ?? player.hp;
+                const newHp = Math.min(stats.maxHp, currentHp + healAmount);
+                result.playerUpdates = { ...result.playerUpdates, hp: newHp };
+                result.floatingTexts.push({ text: `+${healAmount}`, type: 'heal', target: 'player' });
+            }
+        }
+
+        return { damage: playerDmg, newMonsterHp };
     }
 
     // 3. 計算怪物攻擊 (包含閃避、護盾、燃燒加成、冰凍加成與移除)
@@ -366,6 +588,34 @@ export class BattleHandler {
         this.applyBleedSelfDamage(monster, result, false);
         if (result.monsterDied) return result; // 如果流血致死，中止攻擊
 
+        // === 迴避態勢 Buff：強制閃避 ===
+        if (this.hasBuff(player, 'evasion_stance')) {
+            const consumeResult = this.consumeBuff(player, 'evasion_stance');
+            result.playerUpdates!.buffs = consumeResult.buffs;
+            result.floatingTexts.push({ text: '迴避態勢！', type: 'buff', target: 'player', color: 'text-cyan-400' });
+            result.floatingTexts.push({ text: 'MISS', type: 'miss', target: 'player' });
+            result.logs.push(`迴避態勢發動！完美閃避了 ${monster.name} 的攻擊！`);
+            return result;
+        }
+
+        // === 格擋 Buff：傷害反彈給敵人 ===
+        if (this.hasBuff(player, 'counter_stance')) {
+            const consumeResult = this.consumeBuff(player, 'counter_stance');
+            result.playerUpdates!.buffs = consumeResult.buffs;
+
+            // 傷害反彈
+            const counterDmg = Math.floor(monster.atk * 0.8);
+            const newMonsterHp = Math.max(0, monster.hp - counterDmg);
+
+            result.monsterUpdates!.hp = newMonsterHp;
+            result.floatingTexts.push({ text: '格擋反擊！', type: 'buff', target: 'player', color: 'text-orange-400' });
+            result.floatingTexts.push({ text: `-${counterDmg}`, type: 'damage', target: 'monster' });
+            result.logs.push(`格擋發動！將 ${monster.name} 的攻擊反彈，造成 ${counterDmg} 傷害！`);
+
+            if (newMonsterHp <= 0) result.monsterDied = true;
+            return result;
+        }
+
         // 閃避計算 (使用 stats.dodgeChance 作為基礎，包含 AGI 加成)
         let dodgeChance = stats.dodgeChance;
 
@@ -381,6 +631,11 @@ export class BattleHandler {
                 });
             }
         });
+
+        // 武器被動閃避加成 (dodgeBonus)
+        if (player.weapon?.skill?.continuousEffect?.dodgeBonus) {
+            dodgeChance += player.weapon.skill.continuousEffect.dodgeBonus;
+        }
 
         // 上下限 5% ~ 95%
         dodgeChance = Math.min(0.95, Math.max(0.05, dodgeChance));
@@ -462,7 +717,72 @@ export class BattleHandler {
                         }
                     });
                 }
+
+                // 防具 armorEffect 內建詞綴處理
+                if (item.armorEffect?.builtInAffixes) {
+                    item.armorEffect.builtInAffixes.forEach(affixId => {
+                        const affix = AFFIXES[affixId];
+                        if (affix && affix.type === 'passive' && affix.passiveEffect === 'thorns' && affix.value) {
+                            const reflectDmg = Math.max(1, Math.floor(damage * affix.value));
+                            const curMonHp = result.monsterUpdates?.hp ?? monster.hp;
+                            const newMonHp = Math.max(0, curMonHp - reflectDmg);
+                            result.monsterUpdates!.hp = newMonHp;
+                            if (newMonHp <= 0) result.monsterDied = true;
+                        }
+                    });
+                }
             });
+
+            // --- Armor Effect (On Hit) ---
+            const armor = player.armor;
+            if (armor?.armorEffect) {
+                const ae = armor.armorEffect;
+
+                // 受擊時獲得 Buff (例如 haste)
+                if (ae.onHitBuff) {
+                    const newBuffs = this.applyBuff(player, ae.onHitBuff, ae.onHitBuffDuration || 4, false);
+                    result.playerUpdates!.buffs = newBuffs;
+                    result.floatingTexts.push({ text: '加速！', type: 'buff', target: 'player', color: 'text-cyan-400' });
+                }
+
+                // 受擊時回復 MaxHP 百分比
+                if (ae.onHitHealPercent) {
+                    const healAmount = Math.floor(stats.maxHp * ae.onHitHealPercent);
+                    const newHp = Math.min(stats.maxHp, (result.playerUpdates?.hp ?? currentHp) + healAmount);
+                    result.playerUpdates!.hp = newHp;
+                    result.floatingTexts.push({ text: `+${healAmount}`, type: 'heal', target: 'player' });
+                }
+
+                // 受擊時 x% 機率補滿護盾
+                if (ae.onHitShieldRefill && Math.random() < ae.onHitShieldRefill) {
+                    result.playerUpdates!.shield = stats.maxShield;
+                    result.floatingTexts.push({ text: '護盾滿！', type: 'shield', target: 'player' });
+                    result.logs.push('護盾奇蹟般地恢復了！');
+                }
+
+                // 受擊時 x% 機率冰凍敵人
+                if (ae.onHitFreezeChance && Math.random() < ae.onHitFreezeChance) {
+                    const curEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                    const newEffects = this.applyStatus({ statusEffects: curEffects }, 'frozen');
+                    result.monsterUpdates!.statusEffects = newEffects;
+                    result.floatingTexts.push({ text: '❄️Frozen', type: 'frozen', target: 'monster' });
+                    result.logs.push(`${monster.name} 被冰凍了！`);
+                }
+            }
+        }
+
+        // --- Death Save (不朽戰衣效果) ---
+        if (result.playerDied && player.armor?.armorEffect?.deathSave) {
+            // 檢查受傷前 HP 是否 > 50%
+            const hpBeforeDamage = result.playerUpdates?.hp !== undefined ? (result.playerUpdates.hp + damage) : player.hp;
+            const hpPercent = hpBeforeDamage / stats.maxHp;
+
+            if (hpPercent > 0.5) {
+                result.playerDied = false;
+                result.playerUpdates!.hp = 1;
+                result.floatingTexts.push({ text: '不朽！', type: 'buff', target: 'player', color: 'text-yellow-400' });
+                result.logs.push('不朽戰衣發動！你奇蹟般地存活下來！');
+            }
         }
 
         return result;
@@ -493,12 +813,12 @@ export class BattleHandler {
         if (player.weapon.category === 'sword') {
             const dmg = Math.floor(stats.atk * 0.5);
 
-            // 戰技計算狀態 (示範：劍類戰技有機率附加燃燒)
+            // 戰技計算狀態：劍類戰技有機率附加流血
             if (Math.random() < 0.5) {
-                const newEffects = this.applyStatus(monster, 'burn');
+                const newEffects = this.applyStatus(monster, 'bleed');
                 result.monsterUpdates!.statusEffects = newEffects;
-                result.logs.push(`${monster.name} 燃燒了！`);
-                result.floatingTexts.push({ text: '🔥Burn', type: 'crit', target: 'monster' });
+                result.logs.push(`${monster.name} 流血了！`);
+                result.floatingTexts.push({ text: '🩸Bleed', type: 'bleed', target: 'monster' });
             }
 
             // 傷害計算 (需考慮怪物身上的現有狀態)
@@ -536,13 +856,58 @@ export class BattleHandler {
             result.floatingTexts.push({ text: `+${shieldGain}`, type: 'shield', target: 'player' });
             result.logs.push(`⚔️ ${art.name}！獲得 ${shieldGain} 點護盾！`);
 
-            // 法杖戰技：附加冰凍
-            if (Math.random() < 0.8) {
-                const newEffects = this.applyStatus(monster, 'frozen');
-                result.monsterUpdates!.statusEffects = newEffects;
-                result.logs.push(`${monster.name} 被凍結了！`);
-                result.floatingTexts.push({ text: '❄️Frozen', type: 'crit', target: 'monster' });
+        } else if (player.weapon.category === 'dagger') {
+            // Dagger 戰技：賦予連擊 Buff
+            const newBuffs = this.applyBuff(player, 'double_strike', 999, true);
+            result.playerUpdates!.buffs = newBuffs;
+            result.floatingTexts.push({ text: '連擊！', type: 'buff', target: 'player', color: 'text-yellow-400' });
+            result.logs.push(`🗡️ ${art.name}！獲得「連擊」效果，下次普攻將連續攻擊2次！`);
+
+        } else if (player.weapon.category === 'bow') {
+            // Bow 戰技：賦予迴避態勢 Buff
+            const newBuffs = this.applyBuff(player, 'evasion_stance', 999, true);
+            result.playerUpdates!.buffs = newBuffs;
+            result.floatingTexts.push({ text: '迴避態勢！', type: 'buff', target: 'player', color: 'text-cyan-400' });
+            result.logs.push(`🏹 ${art.name}！獲得「迴避態勢」效果，將完美閃避下一次攻擊！`);
+
+        } else if (player.weapon.category === 'mace') {
+            // Mace 戰技：造成傷害並暈眩
+            const dmg = Math.floor(stats.atk * 0.5);
+
+            // 傷害計算
+            let finalDmg = dmg;
+            const mEffects = monster.statusEffects || [];
+
+            const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
+            if (burnEffect) finalDmg = Math.floor(finalDmg * (1 + 0.04 * burnEffect.stacks));
+
+            const frozenIndex = mEffects.findIndex((e: StatusEffect) => e.type === 'frozen');
+            if (frozenIndex >= 0) {
+                finalDmg *= 2;
+                result.floatingTexts.push({ text: 'Shatter!', type: 'crit', target: 'monster' });
+                let effectsToUpdate = result.monsterUpdates!.statusEffects || [...mEffects];
+                effectsToUpdate = effectsToUpdate.filter(e => e.type !== 'frozen');
+                result.monsterUpdates!.statusEffects = effectsToUpdate;
             }
+
+            const newMonsterHp = (result.monsterUpdates?.hp ?? monster.hp) - finalDmg;
+            result.monsterUpdates!.hp = Math.max(0, newMonsterHp);
+            result.effects = { monsterShake: true, hitFlash: true };
+            result.floatingTexts.push({ text: `-${finalDmg}`, type: 'damage', target: 'monster' });
+
+            // 施加暈眩
+            if (newMonsterHp > 0) {
+                const currentEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                result.monsterUpdates!.statusEffects = this.applyStatus({ statusEffects: currentEffects }, 'stun');
+                result.floatingTexts.push({ text: '💫Stun', type: 'stun', target: 'monster' });
+            }
+
+            result.logs.push(`🔨 ${art.name}！造成 ${finalDmg} 點傷害並暈眩敵人！`);
+
+            if (finalDmg > (player.maxDamage || 0)) {
+                result.playerUpdates!.maxDamage = finalDmg;
+            }
+            if (newMonsterHp <= 0) result.monsterDied = true;
         }
 
         return result;
