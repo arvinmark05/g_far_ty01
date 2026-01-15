@@ -1,7 +1,10 @@
 
 // Forward type declarations for Skill interface
 export type StatusType = 'poison' | 'burn' | 'stun' | 'frozen' | 'bleed';
-export type BuffType = 'double_strike' | 'evasion_stance' | 'haste' | 'counter_stance';
+export type BuffType = 'double_strike' | 'evasion_stance' | 'haste' | 'counter_stance' | 'morale' | 'fortify' | 'berserk';
+
+// 怪物職能類型
+export type MonsterRole = 'STANDARD' | 'TANK' | 'RUSHER' | 'BOSS';
 
 export interface Skill {
   id: string;
@@ -107,6 +110,22 @@ export interface Monster {
   exp: number;
   isBoss?: boolean;
   statusEffects?: StatusEffect[];
+  buffs?: BuffEffect[];
+  onHitEffect?: MonsterOnHitEffect;
+  // 新增欄位
+  role?: MonsterRole;
+  floorRange?: [number, number];  // [起始樓層, 結束樓層]
+  isSubSpecies?: boolean;         // 是否為亞種
+  description?: string;           // 怪物描述
+}
+
+// 怪物攻擊擊中效果
+export interface MonsterOnHitEffect {
+  applyStatus?: StatusType;       // 對玩家施加狀態異常
+  statusChance?: number;          // 機率 0~1
+  applySelfBuff?: BuffType;       // 對自己施加 Buff
+  selfBuffChance?: number;        // 機率 0~1
+  bonusDamagePercent?: number;    // 額外傷害百分比
 }
 
 export interface Achievement {

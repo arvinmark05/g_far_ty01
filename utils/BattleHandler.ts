@@ -30,16 +30,35 @@ export class BattleHandler {
 
     // --- Buff 系統核心邏輯 ---
 
+    // 獲取 Buff 造成的攻防加成
+    static getBuffModifiers(entity: any): { atkMult: number, defMult: number } {
+        let atkMult = 1.0;
+        let defMult = 1.0;
+
+        (entity.buffs || []).forEach((buff: BuffEffect) => {
+            if (buff.type === 'morale') atkMult += 0.3 * buff.stacks;      // 鬥志: +30% ATK per stack
+            if (buff.type === 'fortify') defMult += 0.3 * buff.stacks;    // 堅硬: +30% DEF per stack
+            if (buff.type === 'berserk') { atkMult += 0.5; defMult *= 0.5; } // 狂暴: +50% ATK, -50% DEF
+        });
+
+        return { atkMult, defMult };
+    }
+
     // 施加 Buff
     static applyBuff(entity: any, type: BuffType, duration: number = 4, consumeOnTrigger: boolean = true): BuffEffect[] {
         const buffs = [...(entity.buffs || [])];
         const existingIndex = buffs.findIndex(b => b.type === type);
 
+        // 根據 Buff 類型決定最大疊加層數
+        let maxStacks = 5;
+        if (type === 'morale' || type === 'fortify') maxStacks = 3;
+        if (type === 'berserk') maxStacks = 1; // 不疊加
+
         if (existingIndex >= 0) {
             // 已存在，刷新持續時間
             const buff = { ...buffs[existingIndex] };
             buff.duration = duration;
-            buff.stacks = Math.min(5, buff.stacks + 1);
+            buff.stacks = Math.min(maxStacks, buff.stacks + 1);
             buffs[existingIndex] = buff;
         } else {
             // 新增 Buff
@@ -92,10 +111,24 @@ export class BattleHandler {
 
     // --- 狀態異常核心邏輯 ---
 
-    // 施加狀態
+    // 施加狀態 (通用)
     static applyStatus(entity: any, type: StatusType, customDuration?: number): StatusEffect[] {
+        return this.applyStatusWithResistance(entity, type, customDuration, false);
+    }
+
+    // 施加狀態到怪物 (考慮 BOSS 抗性)
+    static applyStatusToMonster(monster: any, type: StatusType, customDuration?: number): StatusEffect[] {
+        const isBoss = monster.isBoss === true || monster.role === 'BOSS';
+        return this.applyStatusWithResistance(monster, type, customDuration, isBoss);
+    }
+
+    // 內部方法：施加狀態 (支援 BOSS 抗性)
+    private static applyStatusWithResistance(entity: any, type: StatusType, customDuration?: number, halvedDuration: boolean = false): StatusEffect[] {
         const effects = [...(entity.statusEffects || [])];
         const existingIndex = effects.findIndex(e => e.type === type);
+
+        // BOSS 狀態持續時間減半
+        const durationMultiplier = halvedDuration ? 0.5 : 1.0;
 
         if (existingIndex >= 0) {
             // 已存在，刷新持續時間並疊加
@@ -103,17 +136,17 @@ export class BattleHandler {
 
             if (type === 'poison') {
                 effect.stacks = Math.min(10, effect.stacks + 1);
-                effect.duration = customDuration ?? 4.0;
+                effect.duration = (customDuration ?? 4.0) * durationMultiplier;
             } else if (type === 'burn') {
                 effect.stacks = Math.min(3, effect.stacks + 1);
-                effect.duration = customDuration ?? 4.0;
+                effect.duration = (customDuration ?? 4.0) * durationMultiplier;
             } else if (type === 'stun') {
-                effect.duration = customDuration ?? 1.0; // 不疊加，僅刷新
+                effect.duration = (customDuration ?? 1.0) * durationMultiplier;
             } else if (type === 'frozen') {
-                effect.duration = customDuration ?? 2.0; // 不疊加，僅刷新
+                effect.duration = (customDuration ?? 2.0) * durationMultiplier;
             } else if (type === 'bleed') {
                 effect.stacks = Math.min(5, effect.stacks + 1);
-                effect.duration = customDuration ?? 4.0;
+                effect.duration = (customDuration ?? 4.0) * durationMultiplier;
             }
 
             effects[existingIndex] = effect;
@@ -124,6 +157,7 @@ export class BattleHandler {
                 if (type === 'stun') duration = 1.0;
                 if (type === 'frozen') duration = 2.0;
             }
+            duration *= durationMultiplier;
 
             effects.push({
                 type,
@@ -218,8 +252,9 @@ export class BattleHandler {
         const pStatus = this.processEntityStatus(player, true);
         const mStatus = this.processEntityStatus(monster, false);
 
-        // 處理 Buff Tick
+        // 處理 Buff Tick (玩家與怪物)
         const pBuffResult = this.processBuffTick(player);
+        const mBuffResult = this.processBuffTick(monster);
 
         // 檢查是否無法行動 (Stun / Frozen)
         const isPlayerStopped = pStatus.effects.some(e => e.type === 'stun' || e.type === 'frozen');
@@ -227,15 +262,16 @@ export class BattleHandler {
 
         // 構建 DoT 結果
         let tickResult: BattleResult | undefined = undefined;
-        const buffChanged = pBuffResult.buffs.length !== (player.buffs?.length || 0);
+        const pBuffChanged = pBuffResult.buffs.length !== (player.buffs?.length || 0);
+        const mBuffChanged = mBuffResult.buffs.length !== (monster.buffs?.length || 0);
 
-        if (pStatus.damage > 0 || mStatus.damage > 0 || pStatus.effects.length !== (player.statusEffects?.length || 0) || mStatus.effects.length !== (monster.statusEffects?.length || 0) || buffChanged) {
+        if (pStatus.damage > 0 || mStatus.damage > 0 || pStatus.effects.length !== (player.statusEffects?.length || 0) || mStatus.effects.length !== (monster.statusEffects?.length || 0) || pBuffChanged || mBuffChanged) {
             tickResult = {
                 logs: [...pStatus.logs, ...mStatus.logs],
                 floatingTexts: [...pStatus.floatTexts, ...mStatus.floatTexts],
                 effects: {},
                 playerUpdates: { statusEffects: pStatus.effects, buffs: pBuffResult.buffs },
-                monsterUpdates: { statusEffects: mStatus.effects }
+                monsterUpdates: { statusEffects: mStatus.effects, buffs: mBuffResult.buffs }
             };
 
             // 扣除玩家血量
@@ -255,17 +291,19 @@ export class BattleHandler {
             }
         }
 
-        // 加速 Buff 影響速度
+        // 加速 Buff 影響速度 (玩家與怪物)
         const playerSpeedMult = pBuffResult.speedMultiplier;
+        const monsterSpeedMult = mBuffResult.speedMultiplier;
 
         return {
             playerAtbDelta: isPlayerStopped ? 0 : stats.speed * 0.1 * playerSpeedMult,
-            monsterAtbDelta: isMonsterStopped ? 0 : monster.speed * 0.1,
+            monsterAtbDelta: isMonsterStopped ? 0 : monster.speed * 0.1 * monsterSpeedMult,
             skillCdDelta: Math.max(0, currentSkillCD - 0.1) - currentSkillCD,
             weaponCdDelta: Math.max(0, currentWeaponCD - 0.1) - currentWeaponCD,
             tickResult
         };
     }
+
 
     // 2. 計算玩家普通攻擊 (包含被動、暴擊、燃燒加成、冰凍加成與移除、連擊 Buff)
     static calculatePlayerAttack(player: any, monster: any): BattleResult {
@@ -457,8 +495,9 @@ export class BattleHandler {
             result.monsterUpdates!.statusEffects = newEffects;
         }
 
-        // 使用減傷公式計算最終傷害（考慮防禦穿透和防禦轉增傷）
-        let monsterDef = (monster.def || 0) * (1 - defPenetration);
+        // 使用減傷公式計算最終傷害（考慮防禦穿透、防禦轉增傷、怪物 Buff）
+        const monsterBuffMods = this.getBuffModifiers(monster);
+        let monsterDef = (monster.def || 0) * monsterBuffMods.defMult * (1 - defPenetration);
         let playerDmg: number;
 
         if (defenseReverse && monsterDef > 0) {
@@ -646,8 +685,33 @@ export class BattleHandler {
             return result;
         }
 
-        // 傷害計算 (使用減傷公式)
-        let damage = calculateDamage(monster.atk, stats.def);
+        // === TANK 職能: HP < 30% 時觸發堅硬模式 ===
+        if (monster.role === 'TANK' && monster.hp <= monster.maxHp * 0.3) {
+            if (!this.hasBuff(monster, 'fortify')) {
+                const newBuffs = this.applyBuff(monster, 'fortify', 999, false);
+                result.monsterUpdates!.buffs = newBuffs;
+                result.floatingTexts.push({ text: '🛡️堅硬模式！', type: 'buff', target: 'monster', color: 'text-blue-400' });
+                result.logs.push(`${monster.name} 進入堅硬模式！防禦力大幅提升！`);
+            }
+        }
+
+        // === BOSS 職能: HP < 25% 時觸發狂暴模式 ===
+        if (monster.role === 'BOSS' && monster.hp <= monster.maxHp * 0.25) {
+            if (!this.hasBuff(monster, 'berserk')) {
+                const currentBuffs = result.monsterUpdates?.buffs || monster.buffs || [];
+                const newBuffs = this.applyBuff({ buffs: currentBuffs }, 'berserk', 999, false);
+                result.monsterUpdates!.buffs = newBuffs;
+                result.floatingTexts.push({ text: '💢狂暴模式！', type: 'buff', target: 'monster', color: 'text-red-600' });
+                result.logs.push(`${monster.name} 進入狂暴模式！攻擊力大幅提升，但防禦降低！`);
+            }
+        }
+
+        // 獲取怪物 Buff 造成的攻擊加成
+        const monsterBuffMods = this.getBuffModifiers(monster);
+        const monsterEffectiveAtk = Math.floor(monster.atk * monsterBuffMods.atkMult);
+
+        // 傷害計算 (使用減傷公式，考慮怪物 Buff)
+        let damage = calculateDamage(monsterEffectiveAtk, stats.def);
 
         // --- 狀態異常傷害計算 (對玩家) ---
         const pEffects = player.statusEffects || [];
@@ -768,6 +832,44 @@ export class BattleHandler {
                     result.floatingTexts.push({ text: '❄️Frozen', type: 'frozen', target: 'monster' });
                     result.logs.push(`${monster.name} 被冰凍了！`);
                 }
+            }
+        }
+
+        // --- 怪物擊中效果 (onHitEffect) ---
+        if (!result.playerDied && monster.onHitEffect) {
+            const effect = monster.onHitEffect;
+
+            // 對玩家施加狀態異常
+            if (effect.applyStatus && Math.random() < (effect.statusChance || 0)) {
+                const currentEffects = result.playerUpdates?.statusEffects || player.statusEffects || [];
+                result.playerUpdates!.statusEffects = this.applyStatus({ statusEffects: currentEffects }, effect.applyStatus);
+
+                const statusIcons: Record<string, string> = {
+                    'poison': '🧪中毒',
+                    'burn': '🔥燃燒',
+                    'stun': '💫暈眩',
+                    'frozen': '❄️冰凍',
+                    'bleed': '🩸流血'
+                };
+                const statusName = statusIcons[effect.applyStatus] || effect.applyStatus;
+                result.floatingTexts.push({ text: statusName, type: effect.applyStatus as any, target: 'player' });
+                result.logs.push(`${monster.name} 的攻擊使你陷入${statusName}狀態！`);
+            }
+
+            // 對自己施加 Buff
+            if (effect.applySelfBuff && Math.random() < (effect.selfBuffChance || 0)) {
+                const currentBuffs = result.monsterUpdates?.buffs || monster.buffs || [];
+                result.monsterUpdates!.buffs = this.applyBuff({ buffs: currentBuffs }, effect.applySelfBuff, 4, true);
+
+                const buffIcons: Record<string, string> = {
+                    'double_strike': '⚔️連擊',
+                    'evasion_stance': '💨迴避',
+                    'haste': '⚡加速',
+                    'counter_stance': '🛡️格擋'
+                };
+                const buffName = buffIcons[effect.applySelfBuff] || effect.applySelfBuff;
+                result.floatingTexts.push({ text: buffName, type: 'buff', target: 'monster', color: 'text-orange-400' });
+                result.logs.push(`${monster.name} 進入了${buffName}態勢！`);
             }
         }
 

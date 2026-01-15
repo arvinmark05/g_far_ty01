@@ -5,12 +5,13 @@ import { Sword, Shield, Heart, Coins, Zap, Save, Download, Upload, Skull, Flame,
 // --- 匯入資料模組 ---
 import { CLASSES } from '../data/classes';
 import { MONSTERS, BOSS_MONSTERS } from '../data/monsters';
+import { getMonsterForFloor, getRegionName, getRegionEmoji } from '../utils/monsterSpawn';
 import { EQUIPMENT } from '../data/items';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { CLASS_SKILLS, WEAPON_ARTS } from '../data/skills';
 import { calculateStats, getMonsterDrops, getItemDisplayName, getRefinedStat, expToLevel } from '../utils/gameFormulas';
 import { BattleHandler, BattleResult } from '../utils/BattleHandler';
-import { FloatingText, StatusEffect, Item, StoryScript, GameFlags } from '../types';
+import { FloatingText, StatusEffect, BuffEffect, Item, StoryScript, GameFlags } from '../types';
 import { StoryHandler } from '../utils/StoryHandler';
 import DialogueOverlay from './DialogueOverlay';
 
@@ -267,6 +268,32 @@ export default function FantasyAdventure() {
     );
   };
 
+  // Buff Icon 組件
+  const BuffIcon = ({ buff }: { buff: BuffEffect; key?: React.Key }) => {
+    let icon = '';
+    let color = '';
+    let label = '';
+
+    switch (buff.type) {
+      case 'double_strike': icon = '⚔️'; color = 'text-yellow-400'; label = '連擊'; break;
+      case 'evasion_stance': icon = '💨'; color = 'text-cyan-400'; label = '迴避'; break;
+      case 'haste': icon = '⚡'; color = 'text-blue-400'; label = '加速'; break;
+      case 'counter_stance': icon = '🛡️'; color = 'text-orange-400'; label = '格擋'; break;
+      case 'morale': icon = '🔥'; color = 'text-red-400'; label = '鬥志'; break;
+      case 'fortify': icon = '🪨'; color = 'text-blue-300'; label = '堅硬'; break;
+      case 'berserk': icon = '💢'; color = 'text-red-600'; label = '狂暴'; break;
+    }
+
+    return (
+      <div className={`flex items-center gap-0.5 ${color} bg-black/60 px-1 py-0.5 rounded text-[10px] font-bold border border-yellow-500/30`}
+        title={`${label} (${buff.duration.toFixed(1)}s)`}>
+        <span>{icon}</span>
+        {buff.stacks > 1 && <span>x{buff.stacks}</span>}
+        <span className="text-[8px] opacity-70 ml-0.5">{Math.ceil(buff.duration)}s</span>
+      </div>
+    );
+  };
+
   // Helper function to add items with stacking logic for materials
   const addToInventory = (newItem: Item) => {
     if (newItem.isMaterial) {
@@ -510,31 +537,17 @@ export default function FantasyAdventure() {
 
   const encounterMonster = (currentDepth: number) => {
     const newDepth = currentDepth + 1;
-    const depthMultiplier = 1 + (newDepth * 0.05);
 
-    let baseMonster;
-    let isBoss = false;
+    // 使用新的怪物生成系統
+    const monster = getMonsterForFloor(newDepth);
+    const isBoss = monster.isBoss === true;
 
-    if (BOSS_MONSTERS[newDepth]) {
-      baseMonster = BOSS_MONSTERS[newDepth];
-      isBoss = true;
-    } else {
-      const monsterIndex = Math.min(Math.floor(newDepth / 15), MONSTERS.length - 1);
-      baseMonster = MONSTERS[monsterIndex];
+    // === RUSHER 職能: 戰鬥開始時獲得 haste ===
+    if (monster.role === 'RUSHER') {
+      monster.buffs = BattleHandler.applyBuff({ buffs: monster.buffs }, 'haste', 8, false);
     }
 
-    const monster = {
-      ...baseMonster,
-      hp: Math.round(baseMonster.hp * depthMultiplier),
-      maxHp: Math.round(baseMonster.hp * depthMultiplier),
-      atk: Math.round(baseMonster.atk * depthMultiplier),
-      def: Math.round((baseMonster.def || 0) * depthMultiplier),
-      speed: Math.min(50, Math.round(baseMonster.speed * (1 + newDepth * 0.002))), // Speed 緩慢增長，上限 50
-      gold: Math.round(baseMonster.gold * depthMultiplier),
-      exp: Math.round(baseMonster.exp * depthMultiplier),
-      isBoss: isBoss,
-      statusEffects: [] // Init status
-    };
+    // === BOSS 職能: HP < 25% 時進入狂暴模式 (在 BattleHandler 中處理) ===
 
     setCurrentMonster(monster);
     setDepth(newDepth);
@@ -548,11 +561,15 @@ export default function FantasyAdventure() {
     const stats = calculateStats(player);
     setPlayer((prev: any) => ({ ...prev, shield: stats.maxShield }));
 
+    const regionName = getRegionName(newDepth);
+    const regionEmoji = getRegionEmoji(newDepth);
+
     setBattleLog([]);
     if (isBoss) {
-      setBattleLog(prev => [...prev, `⚠️ 深度 ${newDepth} - Boss出現！`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
+      setBattleLog(prev => [...prev, `⚠️ ${regionEmoji} ${regionName} - 深度 ${newDepth} - Boss出現！`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
     } else {
-      setBattleLog(prev => [...prev, `深度 ${newDepth}`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
+      const subSpeciesTag = monster.isSubSpecies ? ' [亞種]' : '';
+      setBattleLog(prev => [...prev, `${regionEmoji} ${regionName} - 深度 ${newDepth}${subSpeciesTag}`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
     }
 
     // Check for before_battle story trigger
@@ -1308,9 +1325,14 @@ export default function FantasyAdventure() {
               <div className="max-w-md mx-auto relative z-10">
                 <div className={`text-2xl font-bold mb-1 ${currentMonster.isBoss ? 'text-red-400' : 'text-gray-200'}`}>{currentMonster.isBoss && '💀 '}{currentMonster.name}{currentMonster.isBoss && ' 💀'}</div>
 
-                {/* 怪物狀態列 - 固定高度含 ATK */}
+                {/* 怪物狀態列 - Buff 在左，Status 在右 */}
                 <div className="flex justify-center items-center gap-2 mb-2 h-6">
                   <div className="text-xs text-orange-400 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full border border-orange-500/20"><Sword className="w-3 h-3" /> {currentMonster.atk}</div>
+                  {/* Buff icons */}
+                  {currentMonster.buffs && currentMonster.buffs.map((buff: BuffEffect, i: number) => (
+                    <BuffIcon key={`buff-${i}`} buff={buff} />
+                  ))}
+                  {/* Status icons */}
                   {currentMonster.statusEffects && currentMonster.statusEffects.map((effect: StatusEffect, i: number) => (
                     <StatusIcon key={i} effect={effect} />
                   ))}
@@ -1340,7 +1362,15 @@ export default function FantasyAdventure() {
                 <div className="flex flex-col">
                   <div className="text-white font-bold text-lg flex items-center gap-2">
                     {player.class} <span className="text-sm text-gray-400">Lv.{player.level}</span>
-                    {/* 玩家異常狀態 icon - 顯示在等級右方 */}
+                    {/* 玩家 Buff icons - 在左 */}
+                    {player.buffs && player.buffs.length > 0 && (
+                      <div className="flex gap-1 ml-1">
+                        {player.buffs.map((buff: BuffEffect, i: number) => (
+                          <BuffIcon key={`pbuff-${i}`} buff={buff} />
+                        ))}
+                      </div>
+                    )}
+                    {/* 玩家異常狀態 icon - 在右 */}
                     {player.statusEffects && player.statusEffects.length > 0 && (
                       <div className="flex gap-1 ml-1">
                         {player.statusEffects.map((effect: StatusEffect, i: number) => (
