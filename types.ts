@@ -187,6 +187,12 @@ export interface GameFlags {
   floor_500_cleared?: boolean;
   intro_seen?: boolean;
   shop_tutorial_seen?: boolean;
+  // BOSS 首殺標記
+  boss_100_first_kill?: boolean;
+  boss_200_first_kill?: boolean;
+  boss_300_first_kill?: boolean;
+  boss_400_first_kill?: boolean;
+  boss_500_first_kill?: boolean;
 }
 
 export interface DialogueLine {

@@ -9,7 +9,7 @@ import { getMonsterForFloor, getRegionName, getRegionEmoji } from '../utils/mons
 import { EQUIPMENT } from '../data/items';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { CLASS_SKILLS, WEAPON_ARTS } from '../data/skills';
-import { calculateStats, getMonsterDrops, getItemDisplayName, getRefinedStat, expToLevel } from '../utils/gameFormulas';
+import { calculateStats, getMonsterDrops, getItemDisplayName, getRefinedStat, expToLevel, isBossFloor, getBossFirstKillRewards, getBossFirstKillFlagKey } from '../utils/gameFormulas';
 import { BattleHandler, BattleResult } from '../utils/BattleHandler';
 import { FloatingText, StatusEffect, BuffEffect, Item, StoryScript, GameFlags } from '../types';
 import { StoryHandler } from '../utils/StoryHandler';
@@ -633,10 +633,35 @@ export default function FantasyAdventure() {
       `獲得 ${goldGain} 金幣，${currentMonster.exp} 經驗值`
     ]);
 
+    // === BOSS 首殺獎勵檢查 ===
+    let isFirstKill = false;
+    let flagsUpdate: Partial<GameFlags> = {};
+
+    if (currentMonster.isBoss && isBossFloor(depth)) {
+      const flagKey = getBossFirstKillFlagKey(depth) as keyof GameFlags;
+      if (flagKey && !player.flags?.[flagKey]) {
+        isFirstKill = true;
+        flagsUpdate[flagKey] = true;
+
+        // 給予首殺保證獎勵
+        const firstKillRewards = getBossFirstKillRewards(depth);
+        setBattleLog(prev => [...prev, `🏆 首次擊敗 BOSS！獲得特別獎勵！`]);
+
+        firstKillRewards.forEach(rewardItem => {
+          addToInventory(rewardItem);
+          const displayName = rewardItem.quantity && rewardItem.quantity > 1
+            ? `${getItemDisplayName(rewardItem)} x${rewardItem.quantity}`
+            : getItemDisplayName(rewardItem);
+          setBattleLog(prev => [...prev, `🎁 首殺獎勵: ${displayName}！`]);
+        });
+      }
+    }
+
+    // 一般掉落 (BOSS 首殺後仍有機率額外掉落)
     const drops = getMonsterDrops(currentMonster.name);
     drops.forEach(drop => {
       if (Math.random() < drop.rate) {
-        addToInventory(drop.item); // Use the helper to handle stacking
+        addToInventory(drop.item);
         setBattleLog(prev => [...prev, `✨ 獲得: ${getItemDisplayName(drop.item)}！`]);
       }
     });
@@ -669,10 +694,18 @@ export default function FantasyAdventure() {
         baseMaxHp: prev.baseMaxHp + (20 * levelDiff),
         hp: Math.min(prev.hp + (20 * levelDiff), stats.maxHp + (20 * levelDiff)),
         statPoints: prev.statPoints + levelDiff,
-        statusEffects: [] // Reset status on level up (optional)
+        statusEffects: [],
+        // 套用首殺標記
+        flags: { ...prev.flags, ...flagsUpdate }
       }));
     } else {
-      setPlayer((prev: any) => ({ ...prev, gold: newGold, exp: currentExp }));
+      setPlayer((prev: any) => ({
+        ...prev,
+        gold: newGold,
+        exp: currentExp,
+        // 套用首殺標記
+        flags: { ...prev.flags, ...flagsUpdate }
+      }));
     }
 
     setTimeout(() => {

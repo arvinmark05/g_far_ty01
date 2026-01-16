@@ -6,13 +6,13 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
   weapons: [
     // Sword
     { name: '木劍', atk: 5, price: 50, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.bash, maxSlots: 4 },
-    { name: '鐵劍', atk: 12, price: 150, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.frenzy, maxSlots: 3 },
-    { name: '鋼劍', atk: 20, price: 400, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.pierce, maxSlots: 2 },
-    { name: '聖劍', atk: 35, price: 1000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.holy_slash, maxSlots: 0 },
+    { name: '鐵劍', atk: 12, price: 3000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.frenzy, maxSlots: 3 },
+    { name: '鋼劍', atk: 20, price: 8000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.pierce, maxSlots: 2 },
+    { name: '聖劍', atk: 35, price: 50000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.holy_slash, maxSlots: 0 },
     // Staff
     { name: '木製長杖', atk: 2, price: 80, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.fireball, maxSlots: 4 },
     { name: '法師短杖', atk: 5, price: 200, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.frost_bolt, maxSlots: 3 },
-    { name: '賢者之杖', atk: 8, price: 500, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.thunder, maxSlots: 2 },
+    { name: '賢者之杖', atk: 8, price: 50000, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.thunder, maxSlots: 2 },
     // Dagger
     { name: '短劍', atk: 10, price: 130, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.venomous, maxSlots: 3 },
     { name: '刺客匕首', atk: 18, price: 380, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.assassin_edge, maxSlots: 2 },

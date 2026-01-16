@@ -180,51 +180,337 @@ export const calculateStats = (player: any): PlayerStats => {
     };
 };
 
+// ============================================
+// 怪物掉落系統 (Monster Drop System)
+// 設計理念:
+// - 區域強度決定基礎掉落等級
+// - 亞種怪物掉落特殊/稀有裝備
+// - BOSS 保證掉落區域頂級裝備
+// - 符文掉落率隨區域遞增
+// ============================================
+
+// 隨機生成插槽數 (0 ~ max)
+const createItemWithSlots = (baseItem: Item): Item => {
+    const newItem = { ...baseItem };
+    if (newItem.maxSlots && newItem.maxSlots > 0) {
+        const roll = Math.random();
+        let slots = 0;
+        if (roll < 0.5) slots = 0;
+        else if (roll < 0.8 && newItem.maxSlots >= 1) slots = 1;
+        else if (roll < 0.95 && newItem.maxSlots >= 2) slots = 2;
+        else if (newItem.maxSlots >= 3) slots = Math.floor(Math.random() * (newItem.maxSlots - 2)) + 3;
+
+        newItem.slots = Math.min(slots, newItem.maxSlots);
+    } else {
+        newItem.slots = 0;
+    }
+    newItem.refineLevel = 0;
+    newItem.affixes = [];
+    return newItem;
+};
+
+// 完整掉落表定義
+// 格式: { item: EQUIPMENT.xxx[index], rate: 掉落率 }
+// 裝備價格參考:
+// 武器: 木劍50, 鐵劍150, 鋼劍400, 聖劍1000...
+// 防具: 布衣40, 皮甲120, 鎖甲350, 板甲900, 龍鱗甲2500...
+
+const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
+    // ═══════════════════════════════════════════
+    // 區域 1: 地城迷宮 (Floor 1-100) - 入門裝備
+    // ═══════════════════════════════════════════
+    '史萊姆': [
+        { item: EQUIPMENT.weapons[0], rate: 0.12 },   // 木劍 (sword)
+        { item: EQUIPMENT.armor[0], rate: 0.10 },     // 布衣
+    ],
+    '洞穴蝙蝠': [
+        { item: EQUIPMENT.weapons[7], rate: 0.10 },  // 短劍 (dagger)
+        { item: EQUIPMENT.armor[0], rate: 0.08 },    // 布衣
+    ],
+    '鐵皮哥布林': [
+        { item: EQUIPMENT.weapons[16], rate: 0.08 }, // 木棒 (mace)
+        { item: EQUIPMENT.armor[1], rate: 0.10 },    // 皮甲
+    ],
+    // 亞種 - 掉落稀有符文
+    '劇毒史萊姆': [
+        { item: EQUIPMENT.weapons[7], rate: 0.15 },  // 短劍
+        { item: EQUIPMENT.armor[1], rate: 0.12 },    // 皮甲
+        { item: MATERIALS[3], rate: 0.25 },          // 堅韌符文 (毒系亞種掉VIT符文)
+    ],
+    // BOSS
+    '巨魔領主': [
+        { item: EQUIPMENT.weapons[1], rate: 0.50 },  // 鐵劍 (保證級)
+        { item: EQUIPMENT.armor[1], rate: 0.50 },    // 皮甲
+        { item: EQUIPMENT.weapons[4], rate: 0.25 },  // 木製長杖
+        { item: MATERIALS[0], rate: 1.0 },           // 強化石 (保證)
+    ],
+
+    // ═══════════════════════════════════════════
+    // 區域 2: 陰森森林 (Floor 101-200) - 進階裝備
+    // ═══════════════════════════════════════════
+    '骷髏兵': [
+        { item: EQUIPMENT.weapons[1], rate: 0.10 },  // 鐵劍
+        { item: EQUIPMENT.armor[1], rate: 0.08 },    // 皮甲
+        { item: EQUIPMENT.weapons[12], rate: 0.06 }, // 長弓
+    ],
+    '狂暴野狼': [
+        { item: EQUIPMENT.weapons[8], rate: 0.08 },  // 刺客匕首
+        { item: EQUIPMENT.armor[5], rate: 0.05 },    // 盜賊披風
+    ],
+    '殭屍蘑菇': [
+        { item: EQUIPMENT.armor[2], rate: 0.10 },    // 鎖甲
+        { item: EQUIPMENT.weapons[5], rate: 0.08 },  // 法師短杖
+    ],
+    // 亞種 - 掉落冰系裝備
+    '寒霜座狼': [
+        { item: EQUIPMENT.weapons[8], rate: 0.15 },  // 刺客匕首
+        { item: EQUIPMENT.armor[5], rate: 0.12 },    // 盜賊披風
+        { item: MATERIALS[2], rate: 0.20 },          // 迅捷符文
+    ],
+    // BOSS
+    '死靈法師': [
+        { item: EQUIPMENT.weapons[2], rate: 0.50 },  // 鋼劍
+        { item: EQUIPMENT.armor[2], rate: 0.50 },    // 鎖甲
+        { item: EQUIPMENT.weapons[5], rate: 0.35 },  // 法師短杖
+        { item: MATERIALS[0], rate: 1.0 },           // 強化石
+        { item: MATERIALS[5], rate: 0.30 },          // 吸血符文
+    ],
+
+    // ═══════════════════════════════════════════
+    // 區域 3: 礦山山脈 (Floor 201-300) - 高級裝備
+    // ═══════════════════════════════════════════
+    '獸人戰士': [
+        { item: EQUIPMENT.weapons[2], rate: 0.08 },  // 鋼劍
+        { item: EQUIPMENT.armor[3], rate: 0.06 },    // 板甲
+        { item: EQUIPMENT.weapons[17], rate: 0.05 }, // 鐵瓜錘
+    ],
+    '炸藥哥布林': [
+        { item: EQUIPMENT.weapons[9], rate: 0.08 },  // 銳利匕首
+        { item: EQUIPMENT.weapons[13], rate: 0.06 }, // 獵人短弓
+    ],
+    '岩石巨像': [
+        { item: EQUIPMENT.armor[3], rate: 0.10 },    // 板甲
+        { item: EQUIPMENT.armor[10], rate: 0.05 },   // 騎士鎧甲
+        { item: MATERIALS[1], rate: 0.15 },          // 力量符文
+    ],
+    // 亞種 - 熔岩系掉落
+    '熔岩巨像': [
+        { item: EQUIPMENT.armor[10], rate: 0.15 },   // 騎士鎧甲
+        { item: EQUIPMENT.weapons[18], rate: 0.10 }, // 戰鎚
+        { item: MATERIALS[6], rate: 0.20 },          // 放血符文
+        { item: MATERIALS[9], rate: 0.15 },          // 尖刺符文
+    ],
+    // BOSS
+    '遠古巨龍': [
+        { item: EQUIPMENT.weapons[3], rate: 0.60 },  // 聖劍
+        { item: EQUIPMENT.armor[4], rate: 0.50 },    // 龍鱗甲
+        { item: EQUIPMENT.weapons[6], rate: 0.40 },  // 賢者之杖
+        { item: MATERIALS[0], rate: 1.0 },           // 強化石
+        { item: MATERIALS[7], rate: 0.35 },          // 致命符文
+    ],
+
+    // ═══════════════════════════════════════════
+    // 區域 4: 舊文明遺跡 (Floor 301-400) - 頂級裝備
+    // ═══════════════════════════════════════════
+    '遺跡守衛': [
+        { item: EQUIPMENT.weapons[3], rate: 0.06 },  // 聖劍
+        { item: EQUIPMENT.armor[4], rate: 0.05 },    // 龍鱗甲
+        { item: EQUIPMENT.weapons[14], rate: 0.06 }, // 精靈弓
+    ],
+    '詛咒魔導書': [
+        { item: EQUIPMENT.weapons[6], rate: 0.08 },  // 賢者之杖
+        { item: EQUIPMENT.armor[7], rate: 0.04 },    // 獵人皮衣
+        { item: MATERIALS[4], rate: 0.12 },          // 智慧符文
+    ],
+    '寶箱怪': [
+        { item: EQUIPMENT.armor[11], rate: 0.08 },   // 女武神戰甲
+        { item: EQUIPMENT.weapons[18], rate: 0.06 }, // 戰鎚
+        { item: MATERIALS[0], rate: 0.25 },          // 強化石 (寶箱怪高機率)
+    ],
+    // 亞種 - 超載守衛掉落電擊/特殊裝備
+    '超載守衛': [
+        { item: EQUIPMENT.weapons[14], rate: 0.18 }, // 精靈弓
+        { item: EQUIPMENT.armor[8], rate: 0.12 },    // 仙人掌服裝 (加速)
+        { item: EQUIPMENT.armor[9], rate: 0.10 },    // 牧師聖袍
+        { item: MATERIALS[8], rate: 0.20 },          // 殘暴符文
+    ],
+    // BOSS
+    '吸血伯爵': [
+        { item: EQUIPMENT.armor[6], rate: 0.60 },    // 刺客套裝
+        { item: EQUIPMENT.armor[12], rate: 0.50 },   // 嗜血斗篷
+        { item: EQUIPMENT.weapons[10], rate: 0.40 }, // 沙漠暮光
+        { item: MATERIALS[0], rate: 1.0 },           // 強化石
+        { item: MATERIALS[5], rate: 0.50 },          // 吸血符文
+        { item: MATERIALS[8], rate: 0.40 },          // 殘暴符文
+    ],
+
+    // ═══════════════════════════════════════════
+    // 區域 5: 黑暗荒漠 (Floor 401-500) - 傳說裝備
+    // ═══════════════════════════════════════════
+    '暗影惡魔': [
+        { item: EQUIPMENT.armor[6], rate: 0.05 },    // 刺客套裝
+        { item: EQUIPMENT.weapons[10], rate: 0.04 }, // 沙漠暮光
+        { item: EQUIPMENT.weapons[19], rate: 0.04 }, // 審判之槌
+    ],
+    '暗影刺客': [
+        { item: EQUIPMENT.weapons[9], rate: 0.08 },  // 銳利匕首
+        { item: EQUIPMENT.weapons[10], rate: 0.05 }, // 沙漠暮光
+        { item: EQUIPMENT.armor[12], rate: 0.04 },   // 嗜血斗篷
+    ],
+    '巨型沙蟲': [
+        { item: EQUIPMENT.armor[11], rate: 0.06 },   // 女武神戰甲
+        { item: EQUIPMENT.armor[13], rate: 0.03 },   // 冰霜之心
+        { item: MATERIALS[9], rate: 0.15 },          // 尖刺符文
+    ],
+    // 亞種 - 虛空夢魘掉落最稀有裝備
+    '虛空夢魘': [
+        { item: EQUIPMENT.weapons[11], rate: 0.08 }, // 破甲錐 (最貴匕首)
+        { item: EQUIPMENT.weapons[15], rate: 0.08 }, // 冰風使者 (最貴弓)
+        { item: EQUIPMENT.armor[13], rate: 0.10 },   // 冰霜之心
+        { item: EQUIPMENT.armor[14], rate: 0.06 },   // 不朽戰衣
+        { item: MATERIALS[7], rate: 0.25 },          // 致命符文
+        { item: MATERIALS[8], rate: 0.25 },          // 殘暴符文
+    ],
+    // 最終 BOSS
+    '暗影魔王': [
+        { item: EQUIPMENT.weapons[11], rate: 0.70 }, // 破甲錐
+        { item: EQUIPMENT.weapons[15], rate: 0.70 }, // 冰風使者
+        { item: EQUIPMENT.weapons[19], rate: 0.70 }, // 審判之槌
+        { item: EQUIPMENT.armor[13], rate: 0.60 },   // 冰霜之心
+        { item: EQUIPMENT.armor[14], rate: 0.50 },   // 不朽戰衣
+        { item: MATERIALS[0], rate: 1.0 },           // 強化石
+        { item: MATERIALS[7], rate: 0.80 },          // 致命符文
+        { item: MATERIALS[8], rate: 0.80 },          // 殘暴符文
+        { item: MATERIALS[10], rate: 0.60 },         // 靈巧符文
+    ],
+};
+
+// 根據怪物名稱查找對應區域 (用於計算通用掉落率調整)
+const getMonsterRegion = (monsterName: string): number => {
+    const region1 = ['史萊姆', '洞穴蝙蝠', '鐵皮哥布林', '劇毒史萊姆', '巨魔領主'];
+    const region2 = ['骷髏兵', '狂暴野狼', '殭屍蘑菇', '寒霜座狼', '死靈法師'];
+    const region3 = ['獸人戰士', '炸藥哥布林', '岩石巨像', '熔岩巨像', '遠古巨龍'];
+    const region4 = ['遺跡守衛', '詛咒魔導書', '寶箱怪', '超載守衛', '吸血伯爵'];
+    const region5 = ['暗影惡魔', '暗影刺客', '巨型沙蟲', '虛空夢魘', '暗影魔王'];
+
+    if (region1.includes(monsterName)) return 1;
+    if (region2.includes(monsterName)) return 2;
+    if (region3.includes(monsterName)) return 3;
+    if (region4.includes(monsterName)) return 4;
+    if (region5.includes(monsterName)) return 5;
+    return 1;
+};
+
 export const getMonsterDrops = (monsterName: string): Array<{ item: Item, rate: number }> => {
-    // 隨機生成插槽數 (0 ~ max)
-    const createItemWithSlots = (baseItem: Item): Item => {
-        const newItem = { ...baseItem };
-        if (newItem.maxSlots && newItem.maxSlots > 0) {
-            // 權重: 0插槽機率最高，隨著插槽數增加機率遞減
-            // 簡單算法: 隨機 0~100。 
-            const roll = Math.random();
-            let slots = 0;
-            if (roll < 0.5) slots = 0;
-            else if (roll < 0.8 && newItem.maxSlots >= 1) slots = 1;
-            else if (roll < 0.95 && newItem.maxSlots >= 2) slots = 2;
-            else if (newItem.maxSlots >= 3) slots = Math.floor(Math.random() * (newItem.maxSlots - 2)) + 3;
+    const specificDrops = MONSTER_DROP_TABLE[monsterName] || [];
 
-            newItem.slots = Math.min(slots, newItem.maxSlots);
-        } else {
-            newItem.slots = 0;
-        }
-        // 初始化其他屬性
-        newItem.refineLevel = 0;
-        newItem.affixes = [];
-        return newItem;
-    };
-
-    const baseDrops: Record<string, Array<{ item: any, rate: number }>> = {
-        '史萊姆': [{ item: EQUIPMENT.weapons[0], rate: 0.1 }],
-        '哥布林': [{ item: EQUIPMENT.weapons[1], rate: 0.08 }, { item: EQUIPMENT.armor[0], rate: 0.1 }],
-        '骷髏兵': [{ item: EQUIPMENT.weapons[2], rate: 0.06 }, { item: EQUIPMENT.armor[1], rate: 0.08 }],
-        '獸人': [{ item: EQUIPMENT.armor[2], rate: 0.06 }, { item: EQUIPMENT.weapons[5], rate: 0.05 }],
-        '暗影惡魔': [{ item: EQUIPMENT.weapons[3], rate: 0.05 }, { item: EQUIPMENT.weapons[6], rate: 0.04 }],
-        '巨龍': [{ item: EQUIPMENT.armor[3], rate: 0.05 }, { item: EQUIPMENT.weapons[7], rate: 0.03 }]
-    };
-
-    const drops = (baseDrops[monsterName] || []).map(drop => ({
+    const drops = specificDrops.map(drop => ({
         item: createItemWithSlots(drop.item),
         rate: drop.rate
     }));
 
-    // 追加素材掉落 (通用)
-    // 強化石: 5%
-    drops.push({ item: { ...MATERIALS[0] }, rate: 0.05 });
+    // 通用素材掉落 (根據區域調整機率)
+    const region = getMonsterRegion(monsterName);
 
-    // 隨機符文石: 2%
+    // 強化石基礎 5%，每區域 +2%
+    const refineStoneRate = 0.05 + (region - 1) * 0.02;
+    drops.push({ item: { ...MATERIALS[0] }, rate: refineStoneRate });
+
+    // 隨機符文石基礎 2%，每區域 +1.5%
+    const runeRate = 0.02 + (region - 1) * 0.015;
     const randomRune = MATERIALS[Math.floor(Math.random() * (MATERIALS.length - 1)) + 1];
-    drops.push({ item: { ...randomRune }, rate: 0.02 });
+    drops.push({ item: { ...randomRune }, rate: runeRate });
 
     return drops;
+};
+
+// ============================================
+// BOSS 首殺獎勵系統 (First Kill Rewards)
+// 第一次擊敗 BOSS 時保證掉落頂級裝備
+// ============================================
+
+// BOSS 首殺專屬獎勵表 (100% 掉落)
+const BOSS_FIRST_KILL_REWARDS: Record<number, Array<{ item: any }>> = {
+    // 100F - 巨魔領主：保證給予鐵劍 + 皮甲 + 強化石x3
+    100: [
+        { item: EQUIPMENT.weapons[1] },  // 鐵劍
+        { item: EQUIPMENT.armor[1] },    // 皮甲
+        { item: { ...MATERIALS[0], quantity: 3 } }, // 強化石 x3
+    ],
+    // 200F - 死靈法師：保證給予鋼劍 + 鎖甲 + 吸血符文
+    200: [
+        { item: EQUIPMENT.weapons[2] },  // 鋼劍
+        { item: EQUIPMENT.armor[2] },    // 鎖甲
+        { item: MATERIALS[5] },          // 吸血符文
+        { item: { ...MATERIALS[0], quantity: 3 } }, // 強化石 x3
+    ],
+    // 300F - 遠古巨龍：保證給予聖劍 + 龍鱗甲 + 致命符文
+    300: [
+        { item: EQUIPMENT.weapons[3] },  // 聖劍
+        { item: EQUIPMENT.armor[4] },    // 龍鱗甲
+        { item: MATERIALS[7] },          // 致命符文
+        { item: { ...MATERIALS[0], quantity: 5 } }, // 強化石 x5
+    ],
+    // 400F - 吸血伯爵：保證給予沙漠暮光 + 嗜血斗篷 + 殘暴符文
+    400: [
+        { item: EQUIPMENT.weapons[10] }, // 沙漠暮光
+        { item: EQUIPMENT.armor[12] },   // 嗜血斗篷
+        { item: MATERIALS[8] },          // 殘暴符文
+        { item: MATERIALS[5] },          // 吸血符文
+        { item: { ...MATERIALS[0], quantity: 5 } }, // 強化石 x5
+    ],
+    // 500F - 暗影魔王：保證給予破甲錐 + 冰風使者 + 不朽戰衣 + 多種稀有符文
+    500: [
+        { item: EQUIPMENT.weapons[11] }, // 破甲錐
+        { item: EQUIPMENT.weapons[15] }, // 冰風使者
+        { item: EQUIPMENT.weapons[19] }, // 審判之槌
+        { item: EQUIPMENT.armor[14] },   // 不朽戰衣
+        { item: MATERIALS[7] },          // 致命符文
+        { item: MATERIALS[8] },          // 殘暴符文
+        { item: MATERIALS[10] },         // 靈巧符文
+        { item: { ...MATERIALS[0], quantity: 10 } }, // 強化石 x10
+    ],
+};
+
+// BOSS 樓層對應表
+const BOSS_FLOORS = [100, 200, 300, 400, 500];
+
+/**
+ * 檢查是否為 BOSS 樓層
+ */
+export const isBossFloor = (floor: number): boolean => {
+    return BOSS_FLOORS.includes(floor);
+};
+
+/**
+ * 取得 BOSS 首殺獎勵
+ * @param bossFloor BOSS 所在樓層 (100/200/300/400/500)
+ * @returns 保證掉落的物品陣列 (已處理插槽)
+ */
+export const getBossFirstKillRewards = (bossFloor: number): Item[] => {
+    const rewards = BOSS_FIRST_KILL_REWARDS[bossFloor];
+    if (!rewards) return [];
+
+    return rewards.map(reward => {
+        // 素材直接返回
+        if (reward.item.isMaterial) {
+            return { ...reward.item };
+        }
+        // 裝備處理插槽
+        return createItemWithSlots(reward.item);
+    });
+};
+
+/**
+ * 取得對應樓層的首殺 Flag Key
+ */
+export const getBossFirstKillFlagKey = (bossFloor: number): string | null => {
+    switch (bossFloor) {
+        case 100: return 'boss_100_first_kill';
+        case 200: return 'boss_200_first_kill';
+        case 300: return 'boss_300_first_kill';
+        case 400: return 'boss_400_first_kill';
+        case 500: return 'boss_500_first_kill';
+        default: return null;
+    }
 };
