@@ -193,6 +193,12 @@ export interface GameFlags {
   boss_300_first_kill?: boolean;
   boss_400_first_kill?: boolean;
   boss_500_first_kill?: boolean;
+  // Warning story flags (防止無限觸發)
+  troll_warning_seen?: boolean;
+  necro_warning_seen?: boolean;
+  golem_warning_seen?: boolean;
+  vampire_warning_seen?: boolean;
+  final_warning_seen?: boolean;
 }
 
 export interface DialogueLine {

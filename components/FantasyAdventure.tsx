@@ -559,7 +559,12 @@ export default function FantasyAdventure() {
     setWeaponSkillCooldown(0);
 
     const stats = calculateStats(player);
-    setPlayer((prev: any) => ({ ...prev, shield: stats.maxShield }));
+    // 進入地下城第1層時補滿HP
+    if (newDepth === 1) {
+      setPlayer((prev: any) => ({ ...prev, hp: stats.maxHp, shield: stats.maxShield, statusEffects: [] }));
+    } else {
+      setPlayer((prev: any) => ({ ...prev, shield: stats.maxShield }));
+    }
 
     const regionName = getRegionName(newDepth);
     const regionEmoji = getRegionEmoji(newDepth);
@@ -686,13 +691,16 @@ export default function FantasyAdventure() {
       setBattleLog(prev => [...prev, `⭐ 升級！等級提升至 ${currentLevel}`, `獲得 ${levelDiff} 點升級點數！`]);
 
       const stats = calculateStats(player);
+      // 每級HP提升 = 職業基礎HP * 0.2
+      const classData = CLASSES[player.classKey];
+      const hpPerLevel = Math.floor(classData.hp * 0.2);
       setPlayer((prev: any) => ({
         ...prev,
         gold: newGold,
         exp: currentExp,
         level: currentLevel,
-        baseMaxHp: prev.baseMaxHp + (20 * levelDiff),
-        hp: Math.min(prev.hp + (20 * levelDiff), stats.maxHp + (20 * levelDiff)),
+        baseMaxHp: prev.baseMaxHp + (hpPerLevel * levelDiff),
+        hp: Math.min(prev.hp + (hpPerLevel * levelDiff), stats.maxHp + (hpPerLevel * levelDiff)),
         statPoints: prev.statPoints + levelDiff,
         statusEffects: [],
         // 套用首殺標記

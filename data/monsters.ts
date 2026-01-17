@@ -29,8 +29,8 @@ export const MONSTERS: Monster[] = [
   // --- 亞種 ---
   {
     name: '劇毒史萊姆', emoji: '🟣', role: 'STANDARD', floorRange: [1, 100], isSubSpecies: true,
-    hp: 90, atk: 18, def: 8, speed: 25, gold: 30, exp: 45,
-    onHitEffect: { applyStatus: 'poison', statusChance: 0.50 },
+    hp: 180, atk: 8, def: 8, speed: 50, gold: 30, exp: 45,
+    onHitEffect: { applyStatus: 'poison', statusChance: 0.90 },
     description: '變異的紫色史萊姆，體內含有劇毒酸液。'
   },
 
@@ -50,13 +50,14 @@ export const MONSTERS: Monster[] = [
   {
     name: '殭屍蘑菇', emoji: '🍄', role: 'TANK', floorRange: [101, 200],
     hp: 300, atk: 25, def: 40, speed: 15, gold: 40, exp: 60,
+    onHitEffect: { applyStatus: 'poison', statusChance: 1.0 },
     description: '被孢子感染的巨大蘑菇，皮膚充滿彈性。'
   },
   // --- 亞種 ---
   {
     name: '寒霜座狼', emoji: '❄️', role: 'RUSHER', floorRange: [101, 200], isSubSpecies: true,
-    hp: 160, atk: 18, def: 15, speed: 45, gold: 70, exp: 90,
-    onHitEffect: { applyStatus: 'frozen', statusChance: 0.30 },
+    hp: 240, atk: 12, def: 15, speed: 45, gold: 70, exp: 90,
+    onHitEffect: { applyStatus: 'frozen', statusChance: 0.90 },
     description: '適應了極寒氣候的狼，呼出的氣息能凍結獵物。'
   },
 
@@ -82,8 +83,8 @@ export const MONSTERS: Monster[] = [
   // --- 亞種 ---
   {
     name: '熔岩巨像', emoji: '🌋', role: 'TANK', floorRange: [201, 300], isSubSpecies: true,
-    hp: 1200, atk: 70, def: 150, speed: 8, gold: 120, exp: 180,
-    onHitEffect: { applyStatus: 'burn', statusChance: 0.40 },
+    hp: 2400, atk: 30, def: 150, speed: 8, gold: 120, exp: 180,
+    onHitEffect: { applyStatus: 'burn', statusChance: 0.95 },
     description: '核心是流動的岩漿，攻擊它的人會被灼傷。'
   },
 
@@ -136,7 +137,7 @@ export const MONSTERS: Monster[] = [
   {
     name: '虛空夢魘', emoji: '👻', role: 'STANDARD', floorRange: [401, 500], isSubSpecies: true,
     hp: 3000, atk: 250, def: 100, speed: 50, gold: 600, exp: 800,
-    onHitEffect: { applyStatus: 'bleed', statusChance: 0.35 },
+    onHitEffect: { applySelfBuff: 'evasion_stance', selfBuffChance: 1.0 },
     description: '介於存在與不存在之間，物理攻擊難以命中。'
   }
 ];

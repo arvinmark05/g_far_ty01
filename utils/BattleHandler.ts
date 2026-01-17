@@ -31,17 +31,18 @@ export class BattleHandler {
     // --- Buff 系統核心邏輯 ---
 
     // 獲取 Buff 造成的攻防加成
-    static getBuffModifiers(entity: any): { atkMult: number, defMult: number } {
+    static getBuffModifiers(entity: any): { atkMult: number, defMult: number, speedMult: number } {
         let atkMult = 1.0;
         let defMult = 1.0;
+        let speedMult = 1.0;
 
         (entity.buffs || []).forEach((buff: BuffEffect) => {
             if (buff.type === 'morale') atkMult += 0.3 * buff.stacks;      // 鬥志: +30% ATK per stack
             if (buff.type === 'fortify') defMult += 0.3 * buff.stacks;    // 堅硬: +30% DEF per stack
-            if (buff.type === 'berserk') { atkMult += 0.5; defMult *= 0.5; } // 狂暴: +50% ATK, -50% DEF
+            if (buff.type === 'berserk') { atkMult += 0.25; speedMult += 0.25; defMult *= 0.5; } // 狂暴: +25% ATK, +25% Speed, -50% DEF
         });
 
-        return { atkMult, defMult };
+        return { atkMult, defMult, speedMult };
     }
 
     // 施加 Buff
@@ -100,7 +101,11 @@ export class BattleHandler {
 
             // 加速效果
             if (buff.type === 'haste') {
-                speedMultiplier = 1.5;
+                speedMultiplier *= 1.5;
+            }
+            // 狂暴加速效果
+            if (buff.type === 'berserk') {
+                speedMultiplier *= 1.25;
             }
 
             return buff;

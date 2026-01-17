@@ -6,7 +6,7 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
   weapons: [
     // Sword
     { name: '木劍', atk: 5, price: 50, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.bash, maxSlots: 4 },
-    { name: '鐵劍', atk: 12, price: 3000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.frenzy, maxSlots: 3 },
+    { name: '鐵劍', atk: 12, price: 3000, type: 'weapon', category: 'sword', maxSlots: 3 },
     { name: '鋼劍', atk: 20, price: 8000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.pierce, maxSlots: 2 },
     { name: '聖劍', atk: 35, price: 50000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.holy_slash, maxSlots: 0 },
     // Staff

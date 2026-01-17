@@ -177,13 +177,14 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'troll_warning',
     priority: 110,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 99 && player.flags?.lily_joined && !player.flags?.floor_100_cleared,
+      depth === 99 && phase === 'camp' && player.flags?.lily_joined && !player.flags?.floor_100_cleared && !player.flags?.troll_warning_seen,
     lines: [
       { speakerName: '引導者', text: '呀呵～終於要到第 100 層了呢', image: IMG_GUIDE },
       { speakerName: '引導者', text: '下一層那傢伙很大喔...非常的大♥', image: IMG_GUIDE, emotion: 'happy' },
       { speakerName: '引導者', text: '你那個矮人妹子...會不會被玩壞呢～？好期待啊♪', image: IMG_GUIDE },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { troll_warning_seen: true }
   },
 
   {
@@ -256,12 +257,13 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'necro_warning',
     priority: 110,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 199 && player.flags?.floor_100_cleared && !player.flags?.floor_200_cleared,
+      depth === 199 && phase === 'camp' && player.flags?.floor_100_cleared && !player.flags?.floor_200_cleared && !player.flags?.necro_warning_seen,
     lines: [
       { speakerName: '引導者', text: '死亡的氣息好重～', image: IMG_GUIDE },
       { speakerName: '引導者', text: '下一層是死靈法師的領域喔...小心別嚇尿了？嘻嘻♪', image: IMG_GUIDE, emotion: 'happy' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { necro_warning_seen: true }
   },
 
   {
@@ -337,12 +339,13 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'golem_warning',
     priority: 110,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 299 && player.flags?.floor_200_cleared && !player.flags?.floor_300_cleared,
+      depth === 299 && phase === 'camp' && player.flags?.floor_200_cleared && !player.flags?.floor_300_cleared && !player.flags?.golem_warning_seen,
     lines: [
       { speakerName: '引導者', text: '古老的氣息...感覺很硬呢', image: IMG_GUIDE },
       { speakerName: '引導者', text: '岩石巨像...這次換你們被砸扁嗎？嘻嘻', image: IMG_GUIDE, emotion: 'happy' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { golem_warning_seen: true }
   },
 
   {
@@ -412,12 +415,13 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'vampire_warning',
     priority: 110,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 399 && player.flags?.floor_300_cleared && !player.flags?.floor_400_cleared,
+      depth === 399 && phase === 'camp' && player.flags?.floor_300_cleared && !player.flags?.floor_400_cleared && !player.flags?.vampire_warning_seen,
     lines: [
       { speakerName: '引導者', text: '呀～黑暗又色情的氣息...', image: IMG_GUIDE },
       { speakerName: '引導者', text: '這可是大人的時間喔♥ 小孩子不要偷看嘛～', image: IMG_GUIDE, emotion: 'happy' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { vampire_warning_seen: true }
   },
 
   {
@@ -496,13 +500,14 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'final_warning',
     priority: 110,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 499 && player.flags?.floor_400_cleared && !player.flags?.floor_500_cleared,
+      depth === 499 && phase === 'camp' && player.flags?.floor_400_cleared && !player.flags?.floor_500_cleared && !player.flags?.final_warning_seen,
     lines: [
       { speakerName: '引導者', text: '終於到了呢...最後的深淵', image: IMG_GUIDE },
       { speakerName: '引導者', text: '這一路走來...說實話，我都覺得有點驚訝', image: IMG_GUIDE },
       { speakerName: '引導者', text: '別死了喔，雜魚。...不，現在已經不是雜魚了呢', image: IMG_GUIDE, emotion: 'happy' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { final_warning_seen: true }
   },
 
   {

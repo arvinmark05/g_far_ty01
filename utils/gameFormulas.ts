@@ -88,6 +88,38 @@ export const getStatCorrection = (points: number): number => {
 };
 
 // ============================================
+// 屬性額外加成公式 (Stat Bonus System)
+// ============================================
+
+// STR -> ATK 額外加成 (作用於 baseAtk)
+// 0-20: +1 atk per point, 20-40: +0.5 atk per point, 40+: +0
+const getStrAtkBonus = (str: number): number => {
+    if (str <= 0) return 0;
+    let bonus = 0;
+    const tier1 = Math.min(str, 20);
+    bonus += tier1 * 1;
+    const tier2 = Math.min(Math.max(str - 20, 0), 20);
+    bonus += tier2 * 0.5;
+    return Math.floor(bonus);
+};
+
+// INT -> MATK 額外加成 (作用於 baseMAtk)
+// 0-20: +2, 20-40: +1, 40-60: +0.5, 60+: +0.2
+const getIntMatkBonus = (int: number): number => {
+    if (int <= 0) return 0;
+    let bonus = 0;
+    const tier1 = Math.min(int, 20);
+    bonus += tier1 * 2;
+    const tier2 = Math.min(Math.max(int - 20, 0), 20);
+    bonus += tier2 * 1;
+    const tier3 = Math.min(Math.max(int - 40, 0), 20);
+    bonus += tier3 * 0.5;
+    const tier4 = Math.max(int - 60, 0);
+    bonus += tier4 * 0.2;
+    return Math.floor(bonus);
+};
+
+// ============================================
 // 傷害減傷公式 (Mitigation Formula)
 // Damage = ATK * (1 - DEF / (DEF + K))
 // K = 100，確保永遠有穿透傷害
@@ -157,10 +189,10 @@ export const calculateStats = (player: any): PlayerStats => {
     const weaponAtk = getRefinedStat(player.weapon?.atk, player.weapon?.refineLevel);
     const armorDef = getRefinedStat(player.armor?.def, player.armor?.refineLevel);
 
-    // 5. 基礎數值 (Base Stats)
-    const baseAtk = 10 + weaponAtk;
-    const baseMAtk = 10;
-    const baseDef = 5 + armorDef;
+    // 5. 基礎數值 (Base Stats) - 包含屬性額外加成
+    const baseAtk = 10 + weaponAtk + getStrAtkBonus(finalStr);
+    const baseMAtk = 10 + getIntMatkBonus(finalInt);
+    const baseDef = 5 + armorDef + finalVit; // VIT: +1 def per point
     const baseSpeed = 20;
     const baseHp = player.baseMaxHp;
     const baseCrit = 0.05; // 5% base crit chance
