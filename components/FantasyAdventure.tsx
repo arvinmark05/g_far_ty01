@@ -553,17 +553,31 @@ export default function FantasyAdventure() {
     setDepth(newDepth);
     if (newDepth > maxDepth) setMaxDepth(newDepth);
 
-    setPlayerATB(30);
+    const stats = calculateStats(player);
+
+    // === 新增: 先機符文效果 (first_strike，戰鬥開始時 ATB 充能) ===
+    let initialATB = 30;
+    const firstStrikeData = BattleHandler.getAffixStackedValue(player, 'first_strike');
+    if (firstStrikeData.count > 0) {
+      initialATB += firstStrikeData.value;
+    }
+    setPlayerATB(initialATB);
     setMonsterATB(0);
     setSkillCooldown(0);
     setWeaponSkillCooldown(0);
 
-    const stats = calculateStats(player);
+    // === 新增: 鐵壁符文效果 (start_shield，戰鬥開始時獲得護盾) ===
+    let bonusShield = 0;
+    const startShieldData = BattleHandler.getAffixStackedValue(player, 'start_shield');
+    if (startShieldData.count > 0) {
+      bonusShield = Math.floor(stats.maxHp * startShieldData.value);
+    }
+
     // 進入地下城第1層時補滿HP
     if (newDepth === 1) {
-      setPlayer((prev: any) => ({ ...prev, hp: stats.maxHp, shield: stats.maxShield, statusEffects: [] }));
+      setPlayer((prev: any) => ({ ...prev, hp: stats.maxHp, shield: stats.maxShield + bonusShield, statusEffects: [] }));
     } else {
-      setPlayer((prev: any) => ({ ...prev, shield: stats.maxShield }));
+      setPlayer((prev: any) => ({ ...prev, shield: stats.maxShield + bonusShield }));
     }
 
     const regionName = getRegionName(newDepth);

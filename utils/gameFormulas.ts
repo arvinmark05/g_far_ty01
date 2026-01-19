@@ -29,14 +29,41 @@ export const expToLevel = (level: number): number => {
 
 // Helper: 產生裝備顯示名稱
 // 格式: +N Prefix1 Prefix2 Name [Slots]
+// 支援相同Affix疊加時顯示 "兩倍"、"三倍" 等前綴
 export const getItemDisplayName = (item: Item): string => {
     if (!item) return '';
     let name = item.name;
 
-    // 詞綴前綴
+    // 詞綴前綴 (支援疊加倍數顯示)
     if (item.affixes && item.affixes.length > 0) {
-        const affixNames = item.affixes.map(id => AFFIXES[id]?.name || '').join(' ');
-        if (affixNames) name = `${affixNames} ${name}`;
+        // 計算每種Affix的出現次數
+        const affixCounts = new Map<string, number>();
+        item.affixes.forEach(id => {
+            affixCounts.set(id, (affixCounts.get(id) || 0) + 1);
+        });
+
+        // 倍數詞彙對照表 (index = count)
+        const multiplierWords = ['', '', '兩倍', '三倍', '四倍', '五倍', '六倍', '七倍', '八倍', '九倍', '十倍'];
+
+        // 生成帶倍數的前綴 (保持詞綴出現的順序)
+        const processedAffixes = new Set<string>();
+        const prefixes: string[] = [];
+
+        item.affixes.forEach(id => {
+            if (processedAffixes.has(id)) return;
+            processedAffixes.add(id);
+
+            const affix = AFFIXES[id];
+            if (affix) {
+                const count = affixCounts.get(id) || 1;
+                const mult = count > 1 && count < multiplierWords.length ? multiplierWords[count] : '';
+                prefixes.push(mult + affix.name);
+            }
+        });
+
+        if (prefixes.length > 0) {
+            name = prefixes.join(' ') + ' ' + name;
+        }
     }
 
     // 強化等級前綴
@@ -197,13 +224,35 @@ export const calculateStats = (player: any): PlayerStats => {
     const baseHp = player.baseMaxHp;
     const baseCrit = 0.05; // 5% base crit chance
 
-    // 6. 最終計算 (Multiplicative Formula)
+    // 6. 計算 speed_haste 加成 (快速符文效果)
+    let speedHasteBonus = 0;
+    equippedItems.forEach((item: Item) => {
+        if (item.affixes) {
+            item.affixes.forEach(affixId => {
+                const affix = AFFIXES[affixId];
+                if (affix && affix.type === 'passive' && affix.passiveEffect === 'speed_haste' && affix.value) {
+                    speedHasteBonus += affix.value;
+                }
+            });
+        }
+        // 防具內建詞綴
+        if (item.armorEffect?.builtInAffixes) {
+            item.armorEffect.builtInAffixes.forEach((affixId: string) => {
+                const affix = AFFIXES[affixId];
+                if (affix && affix.type === 'passive' && affix.passiveEffect === 'speed_haste' && affix.value) {
+                    speedHasteBonus += affix.value;
+                }
+            });
+        }
+    });
+
+    // 7. 最終計算 (Multiplicative Formula)
 
     return {
         atk: Math.floor(baseAtk * (1 + strCorr)),
         matk: Math.floor(baseMAtk * (1 + intCorr)),
         def: Math.floor(baseDef * (1 + vitCorr * 0.5 + strCorr * 0.2)),
-        speed: Math.floor(baseSpeed * (1 + finalAgi * 0.05)),
+        speed: Math.floor(baseSpeed * (1 + finalAgi * 0.05) * (1 + speedHasteBonus)),
         maxHp: Math.floor(baseHp * (1 + vitCorr * 1.5)),
         maxShield: Math.floor(intCorr * 250),
         critChance: Math.min(1, Math.max(0, baseCrit * (1 + (finalAgi * 0.1) + (finalInt * 0.025)) + bonusCritChance)),

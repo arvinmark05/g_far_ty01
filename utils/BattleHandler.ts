@@ -45,6 +45,48 @@ export class BattleHandler {
         return { atkMult, defMult, speedMult };
     }
 
+    // --- Affix 疊加效果計算 Helper ---
+    // 計算玩家裝備上特定 passive effect 的疊加數值
+    // 回傳 { value: 總數值, count: 出現次數 }
+    static getAffixStackedValue(player: any, effectType: string): { value: number, count: number } {
+        let totalValue = 0;
+        let count = 0;
+
+        const equippedItems = [player.weapon, player.armor].filter(Boolean);
+
+        equippedItems.forEach((item: Item) => {
+            // 處理裝備詞綴
+            if (item.affixes) {
+                item.affixes.forEach(affixId => {
+                    const affix = AFFIXES[affixId];
+                    if (affix && affix.type === 'passive' && affix.passiveEffect === effectType) {
+                        count++;
+                        totalValue += affix.value || 0;
+                    }
+                });
+            }
+
+            // 處理防具 armorEffect 內建詞綴
+            if (item.armorEffect?.builtInAffixes) {
+                item.armorEffect.builtInAffixes.forEach((affixId: string) => {
+                    const affix = AFFIXES[affixId];
+                    if (affix && affix.type === 'passive' && affix.passiveEffect === effectType) {
+                        count++;
+                        totalValue += affix.value || 0;
+                    }
+                });
+            }
+        });
+
+        return { value: totalValue, count };
+    }
+
+    // 機率類效果疊加後取得最終機率 (上限 100%)
+    static getStackedChance(player: any, effectType: string): number {
+        const { value } = this.getAffixStackedValue(player, effectType);
+        return Math.min(1, value);
+    }
+
     // 施加 Buff
     static applyBuff(entity: any, type: BuffType, duration: number = 4, consumeOnTrigger: boolean = true): BuffEffect[] {
         const buffs = [...(entity.buffs || [])];
@@ -332,9 +374,9 @@ export class BattleHandler {
         this.applyBleedSelfDamage(player, result, true);
         if (result.playerDied) return result; // 如果流血致死，中止攻擊
 
-        // === 執行攻擊邏輯 (支援連擊 Buff) ===
+        // === 執行攻擊邏輯 (支援連擊 Buff 和 連擊符文) ===
         const hasDoubleStrike = this.hasBuff(player, 'double_strike');
-        const hitCount = hasDoubleStrike ? 2 : 1;
+        let hitCount = hasDoubleStrike ? 2 : 1;
 
         // 如果有連擊 Buff，消耗它
         if (hasDoubleStrike) {
@@ -342,6 +384,16 @@ export class BattleHandler {
             result.playerUpdates!.buffs = consumeResult.buffs;
             result.logs.push('連擊發動！');
             result.floatingTexts.push({ text: '連擊！', type: 'buff', target: 'player', color: 'text-yellow-400' });
+        }
+
+        // === 新增: 連擊符文效果 (double_attack，機率疊加觸發額外攻擊) ===
+        if (!hasDoubleStrike) {
+            const doubleAttackChance = this.getStackedChance(player, 'double_attack');
+            if (doubleAttackChance > 0 && Math.random() < doubleAttackChance) {
+                hitCount = 2;
+                result.logs.push('連擊符文發動！');
+                result.floatingTexts.push({ text: '連擊符文！', type: 'buff', target: 'player', color: 'text-purple-400' });
+            }
         }
 
         let totalDamage = 0;
@@ -381,6 +433,20 @@ export class BattleHandler {
         let agiAtkRatio = 0;
         let healIntRatio = 0;
 
+        // === 新增: 精神抖擻效果 (HP > 95% 時 ATK 加成) ===
+        const maxMightData = this.getAffixStackedValue(player, 'max_might');
+        if (maxMightData.count > 0 && player.hp >= stats.maxHp * 0.95) {
+            const bonusAtk = Math.floor(stats.atk * maxMightData.value);
+            physicalDmg += bonusAtk;
+            result.floatingTexts.push({ text: '精神抖擻！', type: 'buff', target: 'player', color: 'text-yellow-400' });
+        }
+
+        // === 新增: 穿甲效果 (def_pierce) ===
+        const defPierceData = this.getAffixStackedValue(player, 'def_pierce');
+        if (defPierceData.count > 0) {
+            defPenetration += defPierceData.value;
+        }
+
         // 武器特效被動
         const skill: Skill | undefined = player.weapon?.skill;
         if (skill) {
@@ -399,7 +465,7 @@ export class BattleHandler {
                         shouldApplyStatus = skill.continuousEffect.applyStatus;
                     }
                     if (skill.continuousEffect?.defPenetration) {
-                        defPenetration = skill.continuousEffect.defPenetration;
+                        defPenetration += skill.continuousEffect.defPenetration;
                     }
                     if (skill.continuousEffect?.atbOnCrit) {
                         atbOnCrit = skill.continuousEffect.atbOnCrit;
@@ -425,7 +491,7 @@ export class BattleHandler {
                     magicalDmg = stats.matk * skill.continuousEffect.bonusMatkRatio;
                 }
                 if (skill.continuousEffect?.defPenetration) {
-                    defPenetration = skill.continuousEffect.defPenetration;
+                    defPenetration += skill.continuousEffect.defPenetration;
                 }
                 if (skill.continuousEffect?.atbOnCrit) {
                     atbOnCrit = skill.continuousEffect.atbOnCrit;
@@ -447,7 +513,7 @@ export class BattleHandler {
             critChance += 0.15;
         }
 
-        // 裝備詞綴加成
+        // 裝備詞綴加成 (暴擊率、暴擊傷害)
         const equippedItems = [player.weapon, player.armor].filter(Boolean);
         equippedItems.forEach((item: Item) => {
             if (item.affixes) {
@@ -476,6 +542,16 @@ export class BattleHandler {
         }
 
         let rawDmg = physicalDmg + magicalDmg;
+
+        // === 新增: 處決效果 (目標 HP < 30% 時增傷) ===
+        const executeDmgData = this.getAffixStackedValue(player, 'execute_dmg');
+        if (executeDmgData.count > 0) {
+            const targetHpPercent = (monster.hp / (monster.maxHp || monster.hp));
+            if (targetHpPercent < 0.3) {
+                rawDmg *= (1 + executeDmgData.value);
+                result.floatingTexts.push({ text: '處決！', type: 'crit', target: 'monster', color: 'text-red-600' });
+            }
+        }
 
         // --- 狀態異常傷害計算 (對怪物) ---
         const mEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
@@ -527,7 +603,7 @@ export class BattleHandler {
         result.logs.push(`你對 ${monster.name} 造成 ${playerDmg} 點傷害！`);
         result.effects = { monsterShake: true, hitFlash: true };
 
-        // --- 持續效果：施加狀態異常 ---
+        // --- 持續效果：施加狀態異常 (武器被動) ---
         if (shouldApplyStatus && newMonsterHp > 0) {
             const currentEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
             const newEffects = this.applyStatus({ statusEffects: currentEffects }, shouldApplyStatus, statusDuration);
@@ -544,56 +620,77 @@ export class BattleHandler {
             result.logs.push(`${monster.name} 被附加了${shouldApplyStatus === 'poison' ? '中毒' : shouldApplyStatus === 'stun' ? '暈眩' : shouldApplyStatus}！`);
         }
 
-        // --- Affix Effects (On Hit) ---
-        if (player.weapon && player.weapon.affixes) {
-            player.weapon.affixes.forEach((affixId: string) => {
-                const affix = AFFIXES[affixId];
-                if (affix && affix.type === 'passive') {
-                    // 吸血
-                    if (affix.passiveEffect === 'life_steal') {
-                        const healAmount = Math.floor(playerDmg * 0.1);
-                        if (healAmount > 0) {
-                            const currentHp = result.playerUpdates?.hp ?? player.hp;
-                            const newHp = Math.min(stats.maxHp, currentHp + healAmount);
-                            result.playerUpdates = { ...result.playerUpdates, hp: newHp };
-                            result.floatingTexts.push({ text: `+${healAmount}`, type: 'heal', target: 'player' });
-                        }
-                    }
-                    // 放血
-                    if (affix.passiveEffect === 'bleed_on_hit') {
-                        const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects;
-                        const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'bleed');
-                        result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
-                        result.floatingTexts.push({ text: '🩸Bleed', type: 'crit', target: 'monster', color: 'text-red-600' });
-                    }
+        // === 新增: 符文效果處理 (使用疊加邏輯) ===
+        if (newMonsterHp > 0) {
+            // 吸血效果 (疊加)
+            const lifeStealData = this.getAffixStackedValue(player, 'life_steal');
+            if (lifeStealData.count > 0) {
+                const healAmount = Math.floor(playerDmg * 0.1 * lifeStealData.count);
+                if (healAmount > 0) {
+                    const currentHp = result.playerUpdates?.hp ?? player.hp;
+                    const newHp = Math.min(stats.maxHp, currentHp + healAmount);
+                    result.playerUpdates = { ...result.playerUpdates, hp: newHp };
+                    result.floatingTexts.push({ text: `+${healAmount}`, type: 'heal', target: 'player' });
                 }
-            });
-        }
+            }
 
-        // --- Armor Built-in Affixes (On Hit) ---
-        if (player.armor?.armorEffect?.builtInAffixes) {
-            player.armor.armorEffect.builtInAffixes.forEach((affixId: string) => {
-                const affix = AFFIXES[affixId];
-                if (affix && affix.type === 'passive') {
-                    // 吸血
-                    if (affix.passiveEffect === 'life_steal') {
-                        const healAmount = Math.floor(playerDmg * 0.1);
-                        if (healAmount > 0) {
-                            const currentHp = result.playerUpdates?.hp ?? player.hp;
-                            const newHp = Math.min(stats.maxHp, currentHp + healAmount);
-                            result.playerUpdates = { ...result.playerUpdates, hp: newHp };
-                            result.floatingTexts.push({ text: `+${healAmount}`, type: 'heal', target: 'player' });
-                        }
-                    }
-                    // 放血
-                    if (affix.passiveEffect === 'bleed_on_hit') {
-                        const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
-                        const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'bleed');
-                        result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
-                        result.floatingTexts.push({ text: '🩸Bleed', type: 'crit', target: 'monster', color: 'text-red-600' });
-                    }
+            // 放血效果 (100% 機率)
+            const bleedOnHitData = this.getAffixStackedValue(player, 'bleed_on_hit');
+            if (bleedOnHitData.count > 0) {
+                const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'bleed');
+                result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                result.floatingTexts.push({ text: '🩸Bleed', type: 'crit', target: 'monster', color: 'text-red-600' });
+            }
+
+            // 猛毒效果 (100% 機率附加中毒)
+            const poisonOnHitData = this.getAffixStackedValue(player, 'poison_hit');
+            if (poisonOnHitData.count > 0) {
+                const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'poison');
+                result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                result.floatingTexts.push({ text: '🧪Poison', type: 'poison', target: 'monster', color: 'text-green-500' });
+            }
+
+            // 灼熱效果 (100% 機率附加燃燒)
+            const burnOnHitData = this.getAffixStackedValue(player, 'burn_hit');
+            if (burnOnHitData.count > 0) {
+                const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                const newEffects = this.applyStatus({ statusEffects: currentMonsterEffects }, 'burn');
+                result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                result.floatingTexts.push({ text: '🔥Burn', type: 'burn', target: 'monster', color: 'text-orange-500' });
+            }
+
+            // 急凍效果 (機率疊加，上限100%)
+            const freezeOnHitChance = this.getStackedChance(player, 'freeze_hit');
+            if (freezeOnHitChance > 0 && Math.random() < freezeOnHitChance) {
+                const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                const newEffects = this.applyStatusToMonster({ statusEffects: currentMonsterEffects, isBoss: monster.isBoss, role: monster.role }, 'frozen');
+                result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                result.floatingTexts.push({ text: '❄️Frozen', type: 'frozen', target: 'monster', color: 'text-cyan-400' });
+            }
+
+            // 敲暈效果 (機率疊加，上限100%)
+            const stunHitChance = this.getStackedChance(player, 'stun_hit');
+            if (stunHitChance > 0 && Math.random() < stunHitChance) {
+                const currentMonsterEffects = result.monsterUpdates?.statusEffects || monster.statusEffects || [];
+                const newEffects = this.applyStatusToMonster({ statusEffects: currentMonsterEffects, isBoss: monster.isBoss, role: monster.role }, 'stun');
+                result.monsterUpdates = { ...result.monsterUpdates, statusEffects: newEffects };
+                result.floatingTexts.push({ text: '💫Stun', type: 'stun', target: 'monster', color: 'text-yellow-400' });
+            }
+
+            // 獵鷹追擊 (機率疊加，上限100%，傷害 = INT*1.5 + AGI*0.5，無視防禦)
+            const falconBlitzChance = this.getStackedChance(player, 'falcon_blitz');
+            if (falconBlitzChance > 0 && Math.random() < falconBlitzChance) {
+                const falconDmg = Math.floor(player.int * 1.5 + player.agi * 0.5);
+                const newHp = Math.max(0, (result.monsterUpdates?.hp ?? newMonsterHp) - falconDmg);
+                result.monsterUpdates = { ...result.monsterUpdates, hp: newHp };
+                result.floatingTexts.push({ text: `🦅${falconDmg}`, type: 'crit', target: 'monster', color: 'text-amber-400' });
+                result.logs.push(`獵鷹追擊！造成 ${falconDmg} 點無視防禦傷害！`);
+                if (newHp <= 0) {
+                    return { damage: playerDmg + falconDmg, newMonsterHp: 0 };
                 }
-            });
+            }
         }
 
         // INT 回血效果
@@ -838,6 +935,18 @@ export class BattleHandler {
                     result.logs.push(`${monster.name} 被冰凍了！`);
                 }
             }
+
+            // === 新增: 狂暴符文效果 (berserk_on_hit，受傷時機率觸發自身狂暴) ===
+            const berserkOnHitChance = this.getStackedChance(player, 'berserk_on_hit');
+            if (berserkOnHitChance > 0 && Math.random() < berserkOnHitChance) {
+                if (!this.hasBuff(player, 'berserk')) {
+                    const currentBuffs = result.playerUpdates?.buffs || player.buffs || [];
+                    const newBuffs = this.applyBuff({ buffs: currentBuffs }, 'berserk', 8, false);
+                    result.playerUpdates!.buffs = newBuffs;
+                    result.floatingTexts.push({ text: '💢狂暴！', type: 'buff', target: 'player', color: 'text-red-600' });
+                    result.logs.push('狂暴符文發動！進入狂暴狀態！');
+                }
+            }
         }
 
         // --- 怪物擊中效果 (onHitEffect) ---
@@ -920,6 +1029,13 @@ export class BattleHandler {
         if (player.weapon.category === 'sword') {
             const dmg = Math.floor(stats.atk * 0.5);
 
+            // === 新增: 奧術符文效果 (skill_amp，戰技傷害增加) ===
+            const skillAmpData = this.getAffixStackedValue(player, 'skill_amp');
+            let artDmg = dmg;
+            if (skillAmpData.count > 0) {
+                artDmg = Math.floor(dmg * (1 + skillAmpData.value));
+            }
+
             // 戰技計算狀態：劍類戰技有機率附加流血
             if (Math.random() < 0.5) {
                 const newEffects = this.applyStatus(monster, 'bleed');
@@ -929,7 +1045,7 @@ export class BattleHandler {
             }
 
             // 傷害計算 (需考慮怪物身上的現有狀態)
-            let finalDmg = dmg;
+            let finalDmg = artDmg;
             const mEffects = monster.statusEffects || [];
 
             const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
@@ -981,8 +1097,15 @@ export class BattleHandler {
             // Mace 戰技：造成傷害並暈眩
             const dmg = Math.floor(stats.atk * 0.5);
 
+            // === 新增: 奧術符文效果 (skill_amp，戰技傷害增加) ===
+            const skillAmpData = this.getAffixStackedValue(player, 'skill_amp');
+            let artDmg = dmg;
+            if (skillAmpData.count > 0) {
+                artDmg = Math.floor(dmg * (1 + skillAmpData.value));
+            }
+
             // 傷害計算
-            let finalDmg = dmg;
+            let finalDmg = artDmg;
             const mEffects = monster.statusEffects || [];
 
             const burnEffect = mEffects.find((e: StatusEffect) => e.type === 'burn');
@@ -1080,6 +1203,12 @@ export class BattleHandler {
 
                 if ((result.playerUpdates!.hp as number) <= 0) result.playerDied = true;
                 break;
+        }
+
+        // === 新增: 奧術符文效果 (skill_amp，技能傷害增加) ===
+        const skillAmpData = this.getAffixStackedValue(player, 'skill_amp');
+        if (skillAmpData.count > 0) {
+            skillDmg = Math.floor(skillDmg * (1 + skillAmpData.value));
         }
 
         // --- 傷害計算與狀態互動 ---

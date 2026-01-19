@@ -52,7 +52,11 @@ export interface Affix {
   stat?: 'str' | 'agi' | 'vit' | 'int';
   value?: number; // e.g., 10
   // Expanded passive effects
-  passiveEffect?: 'life_steal' | 'bleed_on_hit' | 'thorns' | 'crit_chance' | 'crit_damage' | 'dodge_chance';
+  passiveEffect?: 'life_steal' | 'bleed_on_hit' | 'thorns' | 'crit_chance' | 'crit_damage' | 'dodge_chance'
+  // 新增效果
+  | 'poison_hit' | 'burn_hit' | 'freeze_hit' | 'berserk_on_hit'
+  | 'speed_haste' | 'def_pierce' | 'double_attack' | 'stun_hit' | 'execute_dmg'
+  | 'first_strike' | 'max_might' | 'start_shield' | 'skill_amp' | 'falcon_blitz';
 }
 
 export interface Item {

@@ -62,4 +62,22 @@ export const MATERIALS: Item[] = [
   { name: '殘暴符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'savage', desc: '賦予裝備 "殘暴的" 詞綴 (+50% 暴擊傷害)' },
   { name: '尖刺符文', type: 'material', price: 1000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'spiked', desc: '賦予裝備 "尖刺的" 詞綴 (反彈 20% 傷害)' },
   { name: '靈巧符文', type: 'material', price: 1000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'elusive', desc: '賦予裝備 "靈巧的" 詞綴 (+10% 閃避率)' },
+
+  // ═══════════════════════════════════════════
+  // 新增的 14 種符文 (Designed by Game Producer)
+  // ═══════════════════════════════════════════
+  { name: '猛毒符文', type: 'material', price: 1800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'poison_hit', desc: '賦予裝備 "猛毒的" 詞綴 (普攻附加中毒)' },
+  { name: '灼熱符文', type: 'material', price: 1800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'burn_hit', desc: '賦予裝備 "灼熱的" 詞綴 (普攻附加燃燒)' },
+  { name: '急凍符文', type: 'material', price: 2200, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'freeze_hit', desc: '賦予裝備 "急凍的" 詞綴 (普攻 25% 附加冰凍)' },
+  { name: '狂暴符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'berserk_on_hit', desc: '賦予裝備 "狂暴的" 詞綴 (受傷時 25% 賦予自身狂暴)' },
+  { name: '快速符文', type: 'material', price: 2500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'speed_haste', desc: '賦予裝備 "快速的" 詞綴 (speed +20%)' },
+  { name: '穿甲符文', type: 'material', price: 2200, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'def_pierce', desc: '賦予裝備 "穿甲的" 詞綴 (無視目標 20% 防禦力)' },
+  { name: '連擊符文', type: 'material', price: 3000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'double_attack', desc: '賦予裝備 "連擊的" 詞綴 (普攻 15% 機率造成兩次傷害)' },
+  { name: '敲暈符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'stun_hit', desc: '賦予裝備 "敲暈的" 詞綴 (攻擊有 10% 機率暈眩目標)' },
+  { name: '處決符文', type: 'material', price: 2800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'execute_dmg', desc: '賦予裝備 "處決的" 詞綴 (對 HP < 30% 的敵人傷害增加 30%)' },
+  { name: '先機符文', type: 'material', price: 1500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'first_strike', desc: '賦予裝備 "先機的" 詞綴 (戰鬥開始時 ATB 充能 75%)' },
+  { name: '渾身符文', type: 'material', price: 3500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'max_might', desc: '賦予裝備 "精神抖擻的" 詞綴 (自身 HP 在 95% 以上時，ATK +10%)' },
+  { name: '鐵壁符文', type: 'material', price: 1800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'start_shield', desc: '賦予裝備 "鐵壁的" 詞綴 (戰鬥開始時獲得等同 20% HP 的護盾)' },
+  { name: '奧術符文', type: 'material', price: 2500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'skill_amp', desc: '賦予裝備 "奧術的" 詞綴 (技能傷害增加 20%)' },
+  { name: '獵鷹符文', type: 'material', price: 2500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'falcon_blitz', desc: '賦予裝備 "愛鳥人士的" 詞綴 (普通攻擊時 50% 機率產生獵鷹追擊傷害)' },
 ];
