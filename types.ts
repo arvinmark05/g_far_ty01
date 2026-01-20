@@ -203,6 +203,16 @@ export interface GameFlags {
   golem_warning_seen?: boolean;
   vampire_warning_seen?: boolean;
   final_warning_seen?: boolean;
+  // Region enter flags (防止重複觸發區域入口事件)
+  forest_enter_seen?: boolean;
+  mountain_enter_seen?: boolean;
+  ruins_enter_seen?: boolean;
+  abyss_enter_seen?: boolean;
+  // Shop feature tip flags (商店功能提示)
+  refine_tip_seen?: boolean;
+  enchant_tip_seen?: boolean;
+  refine_stone_tip_seen?: boolean;
+  rune_tip_seen?: boolean;
 }
 
 export interface DialogueLine {

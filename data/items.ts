@@ -28,7 +28,9 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
     { name: '木棒', atk: 10, price: 100, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.skull_crack, maxSlots: 4 },
     { name: '鐵瓜錘', atk: 30, price: 3000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.holy_light, maxSlots: 3 },
     { name: '戰鎚', atk: 50, price: 40000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.war_hammer, maxSlots: 1 },
-    { name: '審判之槌', atk: 28, price: 88888, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.divine_judgment, maxSlots: 0 }
+    { name: '審判之槌', atk: 28, price: 88888, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.divine_judgment, maxSlots: 0 },
+    // 特殊武器
+    { name: '輕巧短刃', atk: 25, price: 8000, type: 'weapon', category: 'dagger', maxSlots: 3, affixes: ['double_attack', 'double_attack', 'double_attack'] }
   ],
   armor: [
     { name: '布衣', def: 3, price: 40, type: 'armor', maxSlots: 4 },
@@ -37,16 +39,18 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
     { name: '板甲', def: 25, price: 900, type: 'armor', maxSlots: 1 },
     { name: '龍鱗甲', def: 40, price: 2500, type: 'armor', maxSlots: 0 },
     // 特殊防具
-    { name: '盜賊披風', def: 10, price: 6000, type: 'armor', maxSlots: 4, armorEffect: { bonusAgi: 10, bonusDodge: 0.15 } },
-    { name: '刺客套裝', def: 44, price: 44444, type: 'armor', maxSlots: 2, armorEffect: { bonusCritChance: 0.15, bonusCritDamage: 0.5 } },
-    { name: '獵人皮衣', def: 30, price: 8000, type: 'armor', maxSlots: 3, armorEffect: { bonusAgi: 15, bonusInt: 10 } },
-    { name: '仙人掌服裝', def: 20, price: 10000, type: 'armor', maxSlots: 2, armorEffect: { onHitBuff: 'haste', onHitBuffDuration: 1 } },
-    { name: '牧師聖袍', def: 20, price: 10000, type: 'armor', maxSlots: 3, armorEffect: { onHitShieldRefill: 0.2 } },
-    { name: '騎士鎧甲', def: 50, price: 10000, type: 'armor', maxSlots: 3, armorEffect: { bonusStr: 10, bonusVit: 15 } },
-    { name: '女武神戰甲', def: 65, price: 50000, type: 'armor', maxSlots: 1, armorEffect: { onHitHealPercent: 0.05 } },
-    { name: '嗜血斗篷', def: 20, price: 66666, type: 'armor', maxSlots: 1, armorEffect: { builtInAffixes: ['life_steal', 'bleed_hit'] } },
-    { name: '冰霜之心', def: 100, price: 133332, type: 'armor', maxSlots: 0, armorEffect: { onHitFreezeChance: 0.25 } },
-    { name: '不朽戰衣', def: 1, price: 100000, type: 'armor', maxSlots: 1, armorEffect: { deathSave: true } }
+    { name: '盜賊披風', def: 10, price: 6000, type: 'armor', maxSlots: 4, armorEffect: { bonusAgi: 10, bonusDodge: 0.15 }, desc: 'AGI+10, 閃避率+15%' },
+    { name: '刺客套裝', def: 44, price: 44444, type: 'armor', maxSlots: 2, armorEffect: { bonusCritChance: 0.15, bonusCritDamage: 0.5 }, desc: '暴擊率+15%, 暴擊傷害+50%' },
+    { name: '獵人皮衣', def: 30, price: 8000, type: 'armor', maxSlots: 3, armorEffect: { bonusAgi: 15, bonusInt: 10 }, desc: 'AGI+15, INT+10' },
+    { name: '仙人掌服裝', def: 20, price: 10000, type: 'armor', maxSlots: 2, armorEffect: { onHitBuff: 'haste', onHitBuffDuration: 4 }, desc: '受傷時賦予自身「加速」4秒' },
+    { name: '牧師聖袍', def: 20, price: 10000, type: 'armor', maxSlots: 3, armorEffect: { onHitShieldRefill: 0.2 }, desc: '受傷時回復20%最大護盾' },
+    { name: '騎士鎧甲', def: 50, price: 10000, type: 'armor', maxSlots: 3, armorEffect: { bonusStr: 10, bonusVit: 15 }, desc: 'STR+10, VIT+15' },
+    { name: '女武神戰甲', def: 65, price: 50000, type: 'armor', maxSlots: 1, armorEffect: { onHitHealPercent: 0.05 }, desc: '受傷時回復5%最大HP' },
+    { name: '嗜血斗篷', def: 20, price: 66666, type: 'armor', maxSlots: 1, armorEffect: { builtInAffixes: ['life_steal', 'bleed_hit'] }, desc: '10%吸血+放血效果' },
+    { name: '冰霜之心', def: 100, price: 133332, type: 'armor', maxSlots: 0, armorEffect: { onHitFreezeChance: 0.25 }, desc: '受傷時25%機率冰凍攻擊者' },
+    { name: '不朽戰衣', def: 1, price: 100000, type: 'armor', maxSlots: 1, armorEffect: { deathSave: true }, desc: 'HP>50%時受到致命傷不會死亡' },
+    // 特殊防具 - 內建符文效果
+    { name: '獵鷹外套', def: 30, price: 20000, type: 'armor', maxSlots: 2, armorEffect: { builtInAffixes: ['falcon_blitz'] }, desc: '50%機率獵鷹追擊效果' }
   ]
 };
 

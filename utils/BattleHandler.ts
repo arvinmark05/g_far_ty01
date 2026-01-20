@@ -382,8 +382,8 @@ export class BattleHandler {
         if (hasDoubleStrike) {
             const consumeResult = this.consumeBuff(player, 'double_strike');
             result.playerUpdates!.buffs = consumeResult.buffs;
-            result.logs.push('連擊發動！');
-            result.floatingTexts.push({ text: '連擊！', type: 'buff', target: 'player', color: 'text-yellow-400' });
+            result.logs.push('影連擊發動！');
+            result.floatingTexts.push({ text: '影連擊！', type: 'buff', target: 'player', color: 'text-yellow-400' });
         }
 
         // === 新增: 連擊符文效果 (double_attack，機率疊加觸發額外攻擊) ===
@@ -391,8 +391,8 @@ export class BattleHandler {
             const doubleAttackChance = this.getStackedChance(player, 'double_attack');
             if (doubleAttackChance > 0 && Math.random() < doubleAttackChance) {
                 hitCount = 2;
-                result.logs.push('連擊符文發動！');
-                result.floatingTexts.push({ text: '連擊符文！', type: 'buff', target: 'player', color: 'text-purple-400' });
+                result.logs.push('二刀連擊發動！');
+                result.floatingTexts.push({ text: '二刀連擊！', type: 'buff', target: 'player', color: 'text-purple-400' });
             }
         }
 
@@ -988,17 +988,21 @@ export class BattleHandler {
         }
 
         // --- Death Save (不朽戰衣效果) ---
+        // 判定邏輯：受傷「前」的當前HP必須>50%時才會觸發不朽效果
+        // 例：maxHP=100, 當前HP=49時受致命傷 → 不觸發（49<50）
+        // 例：maxHP=100, 當前HP=100時受致命傷 → 觸發，HP剩1
         if (result.playerDied && player.armor?.armorEffect?.deathSave) {
-            // 檢查受傷前 HP 是否 > 50%
-            const hpBeforeDamage = result.playerUpdates?.hp !== undefined ? (result.playerUpdates.hp + damage) : player.hp;
-            const hpPercent = hpBeforeDamage / stats.maxHp;
+            // player.hp 是這次受傷「前」的HP（還沒被扣血的狀態）
+            const hpPercentBeforeDamage = player.hp / stats.maxHp;
 
-            if (hpPercent > 0.5) {
+            // 只有受傷「前」當前HP超過50%時才會觸發不朽效果
+            if (hpPercentBeforeDamage > 0.5) {
                 result.playerDied = false;
                 result.playerUpdates!.hp = 1;
                 result.floatingTexts.push({ text: '不朽！', type: 'buff', target: 'player', color: 'text-yellow-400' });
-                result.logs.push('不朽戰衣發動！你奇蹟般地存活下來！');
+                result.logs.push('不朽發動！你奇蹟般地存活下來！');
             }
+            // 如果受傷前當前HP就已經<=50%，則不朽戰衣不觸發，正常死亡
         }
 
         return result;
@@ -1170,26 +1174,26 @@ export class BattleHandler {
         switch (player.classKey) {
             case 'knight':
                 // 暈眩
-                skillDmg = Math.floor(stats.atk * 1.2 + stats.def * 2);
+                skillDmg = Math.floor(stats.atk * 0.8 + stats.def * 2);
                 skillLog = `${skill.name}造成 ${skillDmg} 傷害並暈眩敵人！`;
                 result.monsterUpdates!.statusEffects = this.applyStatus(monster, 'stun');
-                result.floatingTexts.push({ text: '💫Stun', type: 'crit', target: 'monster' });
+                result.floatingTexts.push({ text: '💫Stun', type: 'stun', target: 'monster' });
                 break;
             case 'rogue':
                 // 中毒
-                skillDmg = Math.floor(stats.atk * 2.5);
+                skillDmg = Math.floor(stats.atk * 1.2);
                 result.floatingTexts.push({ text: 'CRIT!', type: 'crit', target: 'monster' });
                 skillLog = `${skill.name}精準命中弱點，造成 ${skillDmg} 傷害並中毒感染！`;
                 result.monsterUpdates!.statusEffects = this.applyStatus(monster, 'poison');
                 result.monsterUpdates!.statusEffects = this.applyStatus({ statusEffects: result.monsterUpdates!.statusEffects }, 'poison'); // 雙層毒
-                result.floatingTexts.push({ text: '🧪Poison', type: 'crit', target: 'monster' });
+                result.floatingTexts.push({ text: '🧪Poison', type: 'poison', target: 'monster' });
                 break;
             case 'mage':
                 // 燃燒
-                skillDmg = Math.floor(stats.matk * 3.5);
-                skillLog = `${skill.name}釋放出毀滅性能量，造成 ${skillDmg} 傷害並燃燒！`;
+                skillDmg = Math.floor(stats.matk * 1.6);
+                skillLog = `${skill.name}！造成 ${skillDmg} 傷害並燃燒！`;
                 result.monsterUpdates!.statusEffects = this.applyStatus(monster, 'burn');
-                result.floatingTexts.push({ text: '🔥Burn', type: 'crit', target: 'monster' });
+                result.floatingTexts.push({ text: '🔥Burn', type: 'burn', target: 'monster' });
                 break;
             case 'challenger':
                 // 這裡要小心累加可能已經存在的 HP 扣除 (來自流血)

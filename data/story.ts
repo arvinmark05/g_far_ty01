@@ -118,6 +118,65 @@ export const STORY_SCRIPTS: StoryScript[] = [
   },
 
   // ============================================
+  // 商店新功能提示事件
+  // ============================================
+
+  {
+    id: 'shop_refine_tip',
+    priority: 92,
+    condition: (player, gameState) =>
+      gameState === 'shop' && player.flags?.floor_100_cleared && !player.flags?.refine_tip_seen,
+    lines: [
+      { speakerName: '莉莉', text: '對了！現在我可以幫你強化裝備了！', image: IMG_LILY_HAPPY, emotion: 'happy' },
+      { speakerName: '莉莉', text: '切換到「強化」分頁，選好裝備和強化石就可以提升裝備的基礎能力！', image: IMG_LILY_NORMAL },
+      { speakerName: '莉莉', text: '強化越高需要越多強化石喔，要注意庫存！', image: IMG_LILY_NORMAL },
+    ],
+    onFinish: () => ({}),
+    setFlags: { refine_tip_seen: true }
+  },
+
+  {
+    id: 'shop_enchant_tip',
+    priority: 92,
+    condition: (player, gameState) =>
+      gameState === 'shop' && player.flags?.floor_200_cleared && !player.flags?.enchant_tip_seen,
+    lines: [
+      { speakerName: '莉莉', text: '太好了！現在可以使用附魔功能了！', image: IMG_LILY_HAPPY, emotion: 'happy' },
+      { speakerName: '莉莉', text: '在「附魔」分頁，可以把符文石的力量注入裝備中！', image: IMG_LILY_NORMAL },
+      { speakerName: '莉莉', text: '每個裝備的插槽數量有限，想好要附什麼再決定喔！', image: IMG_LILY_NORMAL },
+    ],
+    onFinish: () => ({}),
+    setFlags: { enchant_tip_seen: true }
+  },
+
+  {
+    id: 'shop_refine_stone_tip',
+    priority: 92,
+    condition: (player, gameState) =>
+      gameState === 'shop' && player.flags?.floor_300_cleared && !player.flags?.refine_stone_tip_seen,
+    lines: [
+      { speakerName: '莉莉', text: '在礦山找到的礦石都整理好了！', image: IMG_LILY_HAPPY, emotion: 'happy' },
+      { speakerName: '莉莉', text: '現在商店有賣強化石了，需要的話直接買吧！', image: IMG_LILY_NORMAL },
+    ],
+    onFinish: () => ({}),
+    setFlags: { refine_stone_tip_seen: true }
+  },
+
+  {
+    id: 'shop_rune_tip',
+    priority: 92,
+    condition: (player, gameState) =>
+      gameState === 'shop' && player.flags?.floor_400_cleared && !player.flags?.rune_tip_seen,
+    lines: [
+      { speakerName: '莉莉', text: '從遺跡帶回來的符文石都整理好了！', image: IMG_LILY_HAPPY, emotion: 'happy' },
+      { speakerName: '莉莉', text: '現在商店可以購買各種符文石囉！超多種類的！', image: IMG_LILY_NORMAL },
+      { speakerName: '莉莉', text: '用這些符文強化你的裝備吧！', image: IMG_LILY_HAPPY, emotion: 'happy' },
+    ],
+    onFinish: () => ({}),
+    setFlags: { rune_tip_seen: true }
+  },
+
+  // ============================================
   // C. 尋找秘寶之旅 (Floor 30-500)
   // ============================================
 
@@ -227,14 +286,15 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'forest_enter',
     priority: 105,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 101 && phase === 'before_battle' && player.flags?.floor_100_cleared && !player.flags?.floor_200_cleared,
+      depth === 101 && phase === 'before_battle' && player.flags?.floor_100_cleared && !player.flags?.floor_200_cleared && !player.flags?.forest_enter_seen,
     lines: [
       { speakerName: '', text: '環境變得陰暗潮濕，四周都是扭曲的樹木...', image: '' },
       { speakerName: '莉莉', text: '嗚...這裡好恐怖...感覺有什麼東西在盯著我們...', image: IMG_LILY_FEAR, emotion: 'fear' },
       { speakerName: '', text: '莉莉緊緊抓著你的衣角，身體微微顫抖。', image: IMG_LILY_FEAR, emotion: 'fear' },
       { speakerName: '莉莉', text: '那個...我可以這樣跟著你嗎...？不、不要走太快喔...！', image: IMG_LILY_FEAR, emotion: 'fear' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { forest_enter_seen: true }
   },
 
   {
@@ -309,7 +369,7 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'mountain_enter',
     priority: 105,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 201 && phase === 'before_battle' && player.flags?.floor_200_cleared && !player.flags?.floor_300_cleared,
+      depth === 201 && phase === 'before_battle' && player.flags?.floor_200_cleared && !player.flags?.floor_300_cleared && !player.flags?.mountain_enter_seen,
     lines: [
       { speakerName: '', text: '眼前是一片險峻的山脈地形，到處都是裸露的礦脈...', image: '' },
       { speakerName: '莉莉', text: '哇——！這裡...這裡是...！！', image: IMG_LILY_HAPPY, emotion: 'happy' },
@@ -317,7 +377,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
       { speakerName: '莉莉', text: '這是秘銀礦脈！那邊還有精金礦！還有...哇！！', image: IMG_LILY_HAPPY, emotion: 'happy' },
       { speakerName: '莉莉', text: '這裡簡直是矮人的天堂！！我好興奮！！', image: IMG_LILY_HAPPY, emotion: 'happy' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { mountain_enter_seen: true }
   },
 
   {
@@ -387,13 +448,14 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'ruins_enter',
     priority: 105,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 301 && phase === 'before_battle' && player.flags?.floor_300_cleared && !player.flags?.floor_400_cleared,
+      depth === 301 && phase === 'before_battle' && player.flags?.floor_300_cleared && !player.flags?.floor_400_cleared && !player.flags?.ruins_enter_seen,
     lines: [
       { speakerName: '', text: '古老的文明遺跡...牆上刻著神秘的符文...', image: '' },
       { speakerName: '莉莉', text: '這裡一定有很多值錢的古物...嘿嘿...', image: IMG_LILY_HAPPY, emotion: 'happy' },
       { speakerName: '莉莉', text: '什麼？我只是想研究歷史！...順便...帶走一點而已...', image: IMG_LILY_NORMAL },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { ruins_enter_seen: true }
   },
 
   {
@@ -467,13 +529,14 @@ export const STORY_SCRIPTS: StoryScript[] = [
     id: 'abyss_enter',
     priority: 105,
     condition: (player, gameState, depth, maxDepth, phase) =>
-      depth === 401 && phase === 'before_battle' && player.flags?.floor_400_cleared && !player.flags?.floor_500_cleared,
+      depth === 401 && phase === 'before_battle' && player.flags?.floor_400_cleared && !player.flags?.floor_500_cleared && !player.flags?.abyss_enter_seen,
     lines: [
       { speakerName: '', text: '黑暗荒漠...只剩下火把微弱的光芒...', image: '' },
       { speakerName: '莉莉', text: '...終於快到了嗎...深淵火種...', image: IMG_LILY_NORMAL },
       { speakerName: '莉莉', text: '...說起來，我們已經一起走了這麼遠了呢...', image: IMG_LILY_HAPPY, emotion: 'happy' },
     ],
-    onFinish: () => ({})
+    onFinish: () => ({}),
+    setFlags: { abyss_enter_seen: true }
   },
 
   {

@@ -41,6 +41,12 @@ export default function FantasyAdventure() {
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [selectedMaterialIndex, setSelectedMaterialIndex] = useState<number | null>(null);
 
+  // Multi-Save Slots State (多存檔系統)
+  const [selectedSlot, setSelectedSlot] = useState<number>(0); // 當前使用的存檔槽位 (0, 1, 2)
+  const [pendingClassKey, setPendingClassKey] = useState<string | null>(null); // 待確認的職業
+  const [showSlotSelect, setShowSlotSelect] = useState(false); // 顯示存檔選擇介面
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState<number | null>(null); // 顯示覆蓋確認 (slot number)
+
   // --- DEV TOOLS STATE (可移除區塊) ---
   const [devStartFloor, setDevStartFloor] = useState(1);
 
@@ -232,12 +238,16 @@ export default function FantasyAdventure() {
     let startX = 50;
     let startY = 50;
 
+    // 增加隨機偏移，讓連擊攻擊的數字分散顯示
+    const randomOffsetX = (Math.random() * 40 - 20); // -20 到 +20 的隨機偏移
+    const randomOffsetY = (Math.random() * 10 - 5); // -5 到 +5 的隨機偏移
+
     if (isPlayerTarget) {
-      startX = 50 + (Math.random() * 20 - 10);
-      startY = 75;
+      startX = 50 + randomOffsetX;
+      startY = 75 + randomOffsetY;
     } else {
-      startX = 50 + (Math.random() * 20 - 10);
-      startY = 25;
+      startX = 50 + randomOffsetX;
+      startY = 25 + randomOffsetY;
     }
 
     setFloatingTexts(prev => [...prev, { id, text, x: startX, y: startY, color, size }]);
@@ -314,8 +324,27 @@ export default function FantasyAdventure() {
     }
   };
 
-  const saveGame = (notify = true) => {
+  // 獲取指定存檔槽位的資訊
+  const getSaveSlotInfo = (slot: number): { name: string; class: string; level: number } | null => {
+    const saved = localStorage.getItem(`fantasyrpg_save_${slot}`);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        return {
+          name: data.player?.name || '未知',
+          class: data.player?.class || '未知職業',
+          level: data.player?.level || 1
+        };
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const saveGame = (notify = true, slot?: number) => {
     if (!player) return;
+    const targetSlot = slot !== undefined ? slot : selectedSlot;
     const saveData = {
       player,
       inventory,
@@ -324,14 +353,15 @@ export default function FantasyAdventure() {
       lastCampDepth,
       gameState: gameState === 'battle' ? 'village' : gameState
     };
-    localStorage.setItem('fantasyrpg_save', JSON.stringify(saveData));
+    localStorage.setItem(`fantasyrpg_save_${targetSlot}`, JSON.stringify(saveData));
     if (notify) {
-      alert('遊戲已存檔！');
+      alert(`遊戲已存檔至欄位 ${targetSlot + 1}！`);
     }
   };
 
-  const loadGame = () => {
-    const saved = localStorage.getItem('fantasyrpg_save');
+  const loadGame = (slot?: number) => {
+    const targetSlot = slot !== undefined ? slot : selectedSlot;
+    const saved = localStorage.getItem(`fantasyrpg_save_${targetSlot}`);
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -341,6 +371,7 @@ export default function FantasyAdventure() {
         setMaxDepth(data.maxDepth);
         setLastCampDepth(data.lastCampDepth);
         setGameState(data.gameState || 'village');
+        setSelectedSlot(targetSlot);
         setBattleLog(['歡迎回來，冒險者！']);
       } catch (e) {
         alert('存檔讀取失敗！');
@@ -443,14 +474,39 @@ export default function FantasyAdventure() {
 
   // --- Game Logic ---
 
+  // 選擇職業 - 改為顯示存檔選擇介面
   const selectClass = (classKey: string) => {
-    const selectedClass = CLASSES[classKey];
+    setPendingClassKey(classKey);
+    setShowSlotSelect(true);
+  };
+
+  // 處理存檔欄位選擇
+  const confirmSlotSelection = (slot: number) => {
+    const existingSave = getSaveSlotInfo(slot);
+    if (existingSave) {
+      // 有存檔，顯示覆蓋確認
+      setShowOverwriteConfirm(slot);
+    } else {
+      // 無存檔，直接開始
+      startGameWithSlot(slot);
+    }
+  };
+
+  // 使用指定存檔欄位開始遊戲
+  const startGameWithSlot = (slot: number) => {
+    if (!pendingClassKey) return;
+    const selectedClass = CLASSES[pendingClassKey];
+
+    setSelectedSlot(slot);
+    setShowSlotSelect(false);
+    setShowOverwriteConfirm(null);
+    setPendingClassKey(null);
 
     setPlayer({
       name: 'Hero', // Default name, will be set by intro
       flags: {} as GameFlags,
       class: selectedClass.name,
-      classKey: classKey,
+      classKey: pendingClassKey,
       baseMaxHp: selectedClass.hp,
       hp: selectedClass.hp,
       shield: 0,
@@ -474,6 +530,10 @@ export default function FantasyAdventure() {
       statusEffects: [],
       storyProgress: 0
     });
+    setInventory([]);
+    setDepth(0);
+    setMaxDepth(0);
+    setLastCampDepth(0);
     setGameState('village');
   };
 
@@ -544,7 +604,7 @@ export default function FantasyAdventure() {
 
     // === RUSHER 職能: 戰鬥開始時獲得 haste ===
     if (monster.role === 'RUSHER') {
-      monster.buffs = BattleHandler.applyBuff({ buffs: monster.buffs }, 'haste', 8, false);
+      monster.buffs = BattleHandler.applyBuff({ buffs: monster.buffs }, 'haste', 4, false);
     }
 
     // === BOSS 職能: HP < 25% 時進入狂暴模式 (在 BattleHandler 中處理) ===
@@ -838,6 +898,7 @@ export default function FantasyAdventure() {
     const targetItem = inventory[selectedItemIndex];
     const material = inventory[selectedMaterialIndex];
     const cost = 200 + (targetItem.refineLevel || 0) * 100;
+    const stoneCost = (targetItem.refineLevel || 0) + 1; // 累進消耗: +0→+1消耗1, +1→+2消耗2...
 
     if (player.gold < cost) {
       alert("金幣不足！");
@@ -845,6 +906,11 @@ export default function FantasyAdventure() {
     }
     if ((targetItem.refineLevel || 0) >= 9) {
       alert("已達強化上限！");
+      return;
+    }
+    // 檢查強化石數量是否足夠
+    if ((material.quantity || 1) < stoneCost) {
+      alert(`強化石不足！需要 ${stoneCost} 個，目前只有 ${material.quantity || 1} 個`);
       return;
     }
 
@@ -876,11 +942,15 @@ export default function FantasyAdventure() {
     // Update Item
     targetItemInArr.refineLevel = (targetItemInArr.refineLevel || 0) + 1;
 
-    // Consume Material
-    if ((materialInArr.quantity || 1) > 1) {
-      materialInArr.quantity! -= 1;
-    } else {
+    // Consume Material (累進消耗)
+    if ((materialInArr.quantity || 1) > stoneCost) {
+      materialInArr.quantity! -= stoneCost;
+    } else if ((materialInArr.quantity || 1) === stoneCost) {
       nextInventory.splice(selectedMaterialIndex, 1);
+    } else {
+      // 這不應該發生，因為上面已經檢查過
+      alert('強化石數量異常！');
+      return;
     }
 
     setInventory(nextInventory);
@@ -1039,7 +1109,6 @@ export default function FantasyAdventure() {
   // Common Wrapper Render
   const renderGameContent = () => {
     if (!player && gameState === 'class-select') {
-      // ... (Keep existing code)
       return (
         <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 relative">
           <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 max-w-2xl w-full border border-purple-500/30 relative">
@@ -1047,10 +1116,40 @@ export default function FantasyAdventure() {
               ⚔️ Fantasy Adventure RPG
             </h1>
             <p className="text-center text-purple-300 mb-6">選擇你的職業，開始無盡的地下城冒險</p>
-            <div className="flex justify-center mb-6">
-              <button onClick={loadGame} className="flex items-center gap-2 bg-gray-800/80 hover:bg-gray-700 text-white px-6 py-2 rounded-lg border border-gray-600 transition-all hover:scale-105">
-                <Download size={18} /> 讀取上次進度
-              </button>
+
+            {/* 存檔欄位選擇 */}
+            <div className="mb-6">
+              <h3 className="text-center text-lg font-bold text-blue-300 mb-3">📂 讀取存檔</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[0, 1, 2].map(slot => {
+                  const saveInfo = getSaveSlotInfo(slot);
+                  return (
+                    <button
+                      key={slot}
+                      onClick={() => saveInfo ? loadGame(slot) : null}
+                      disabled={!saveInfo}
+                      className={`p-3 rounded-lg border transition-all ${saveInfo
+                        ? 'bg-gray-800/80 hover:bg-gray-700 border-gray-600 cursor-pointer hover:scale-105'
+                        : 'bg-gray-900/50 border-gray-700/50 cursor-not-allowed opacity-50'
+                        }`}
+                    >
+                      <div className="text-sm font-bold text-white mb-1">欄位 {slot + 1}</div>
+                      {saveInfo ? (
+                        <div className="text-xs text-gray-300">
+                          <div>{saveInfo.name}</div>
+                          <div>{saveInfo.class} Lv.{saveInfo.level}</div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500">空白</div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-purple-500/30 pt-4 mb-4">
+              <h3 className="text-center text-lg font-bold text-purple-300 mb-3">🎮 新遊戲 - 選擇職業</h3>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {Object.entries(CLASSES).map(([key, cls]) => {
@@ -1072,6 +1171,77 @@ export default function FantasyAdventure() {
               })}
             </div>
           </div>
+
+          {/* 存檔欄位選擇彈窗 */}
+          {showSlotSelect && pendingClassKey && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-purple-500/50">
+                <h2 className="text-xl font-bold text-yellow-400 mb-4 text-center">選擇存檔欄位</h2>
+                <p className="text-gray-300 text-sm mb-4 text-center">選擇一個欄位來儲存你的冒險進度</p>
+                <div className="space-y-3">
+                  {[0, 1, 2].map(slot => {
+                    const saveInfo = getSaveSlotInfo(slot);
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => confirmSlotSelection(slot)}
+                        className="w-full p-4 rounded-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 transition-all text-left"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-bold text-white">欄位 {slot + 1}</div>
+                            {saveInfo ? (
+                              <div className="text-sm text-gray-400">
+                                {saveInfo.name} - {saveInfo.class} Lv.{saveInfo.level}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-green-400">New Game</div>
+                            )}
+                          </div>
+                          {saveInfo && <div className="text-xs text-orange-400">⚠️ 將覆蓋</div>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => { setShowSlotSelect(false); setPendingClassKey(null); }}
+                  className="w-full mt-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 覆蓋確認彈窗 */}
+          {showOverwriteConfirm !== null && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+              <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full border border-red-500/50">
+                <h2 className="text-xl font-bold text-red-400 mb-4 text-center">⚠️ 確認覆蓋</h2>
+                <p className="text-gray-300 text-center mb-4">
+                  欄位 {showOverwriteConfirm + 1} 已有存檔資料，確定要覆蓋嗎？
+                </p>
+                <div className="text-center text-gray-400 text-sm mb-4">
+                  {getSaveSlotInfo(showOverwriteConfirm)?.name} - {getSaveSlotInfo(showOverwriteConfirm)?.class} Lv.{getSaveSlotInfo(showOverwriteConfirm)?.level}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowOverwriteConfirm(null)}
+                    className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={() => startGameWithSlot(showOverwriteConfirm)}
+                    className="flex-1 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold"
+                  >
+                    確定覆蓋
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -1080,19 +1250,56 @@ export default function FantasyAdventure() {
     if (gameState === 'game-over') {
       return (
         <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black flex items-center justify-center p-4">
-          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-8 max-w-md w-full border border-red-500/50 text-center animate-pulse">
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-8 max-w-lg w-full border border-red-500/50 text-center">
             <div className="text-6xl mb-4 text-red-500"><Skull size={64} className="mx-auto" /></div>
             <h2 className="text-3xl font-bold text-red-400 mb-4">你已陣亡</h2>
-            <div className="text-gray-300 space-y-2 mb-6 bg-red-900/20 p-4 rounded-lg">
+            <div className="text-gray-300 space-y-2 mb-4 bg-red-900/20 p-4 rounded-lg">
               <p>本次到達深度: <span className="text-white font-bold">{depth}</span></p>
               <p>歷史最大深度: <span className="text-white font-bold">{maxDepth}</span></p>
               <p>最終等級: <span className="text-white font-bold">{player.level}</span></p>
               <p>持有金幣: <span className="text-yellow-400 font-bold">{player.gold}</span></p>
             </div>
-            <div className="flex gap-4">
-              <button onClick={loadGame} className="flex-1 bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold text-white transition-all">讀取存檔</button>
-              <button onClick={() => { setPlayer(null); setDepth(0); setMaxDepth(0); setLastCampDepth(0); setInventory([]); setGameState('class-select'); }} className="flex-1 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 px-6 py-3 rounded-lg font-bold text-white transition-all">重新開始</button>
+
+            {/* 死亡前戰鬥LOG */}
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-gray-400 mb-2">最後的戰鬥記錄</h3>
+              <div className="bg-black/40 rounded-lg p-2 max-h-32 overflow-y-auto text-left custom-scrollbar">
+                {battleLog.slice(-10).map((log, i) => (
+                  <div key={i} className="text-gray-400 text-xs py-0.5">{log}</div>
+                ))}
+                {battleLog.length === 0 && <div className="text-gray-500 text-xs">無戰鬥記錄</div>}
+              </div>
             </div>
+
+            {/* 存檔欄位選擇 */}
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-gray-400 mb-2">讀取存檔</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {[0, 1, 2].map(slot => {
+                  const saveInfo = getSaveSlotInfo(slot);
+                  return (
+                    <button
+                      key={slot}
+                      onClick={() => saveInfo ? loadGame(slot) : null}
+                      disabled={!saveInfo}
+                      className={`p-2 rounded-lg border text-xs transition-all ${saveInfo
+                        ? 'bg-gray-800 hover:bg-gray-700 border-gray-600 cursor-pointer'
+                        : 'bg-gray-900/50 border-gray-700/50 cursor-not-allowed opacity-50'
+                        }`}
+                    >
+                      <div className="font-bold text-white">欄位 {slot + 1}</div>
+                      {saveInfo ? (
+                        <div className="text-gray-400">{saveInfo.class} Lv.{saveInfo.level}</div>
+                      ) : (
+                        <div className="text-gray-500">空白</div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button onClick={() => { setPlayer(null); setDepth(0); setMaxDepth(0); setLastCampDepth(0); setInventory([]); setGameState('class-select'); }} className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 px-6 py-3 rounded-lg font-bold text-white transition-all">重新開始</button>
           </div>
         </div>
       );
@@ -1357,18 +1564,23 @@ export default function FantasyAdventure() {
           </div>
 
           <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-            {floatingTexts.map(ft => (
-              <div key={ft.id} className={`absolute left-0 top-0 ${ft.color} ${ft.size} font-bold transition-all duration-1000 ease-out`} style={{ left: `${ft.x}%`, top: `${ft.y}%`, transform: 'translate(-50%, -50%)', opacity: 0, animation: 'floatUp 0.8s forwards' }}>
-                <style>{`
-                            @keyframes floatUp {
-                                0% { opacity: 1; margin-top: 0px; transform: translate(-50%, -50%) scale(0.8); }
-                                20% { opacity: 1; margin-top: -20px; transform: translate(-50%, -50%) scale(1.5); }
-                                100% { opacity: 0; margin-top: -60px; transform: translate(-50%, -50%) scale(1); }
-                            }
-                        `}</style>
-                {ft.text}
-              </div>
-            ))}
+            {floatingTexts.map((ft, index) => {
+              // 判斷是否為異常狀態/buff文字（包含emoji或特定關鍵字）- 這些會往上偏移避免與傷害數字重疊
+              const isStatusText = /[🧪🔥💫❄️🩸🦅🛡️⚡]|Poison|Burn|Stun|Frozen|Bleed|Shatter|CRIT|連擊|狂暴|精神抖擻|處決|獵鷹|格擋|迴避|加速|護盾|破甲/.test(ft.text);
+              const yOffset = isStatusText ? -8 : 0; // 異常狀態往上偏移
+              return (
+                <div key={ft.id} className={`absolute left-0 top-0 ${ft.color} ${ft.size} font-bold transition-all duration-1000 ease-out`} style={{ left: `${ft.x}%`, top: `calc(${ft.y}% + ${yOffset}%)`, transform: 'translate(-50%, -50%)', opacity: 0, animation: 'floatUp 0.8s forwards' }}>
+                  <style>{`
+                              @keyframes floatUp {
+                                  0% { opacity: 1; margin-top: 0px; transform: translate(-50%, -50%) scale(0.8); }
+                                  20% { opacity: 1; margin-top: -20px; transform: translate(-50%, -50%) scale(1.5); }
+                                  100% { opacity: 0; margin-top: -60px; transform: translate(-50%, -50%) scale(1); }
+                              }
+                          `}</style>
+                  {ft.text}
+                </div>
+              );
+            })}
           </div>
 
           <div className="max-w-4xl mx-auto relative h-full flex flex-col">
@@ -1547,9 +1759,12 @@ export default function FantasyAdventure() {
                 ) : <div className="flex-1 bg-black/20 p-2 rounded text-center text-gray-600 text-sm border border-gray-800">無主手</div>}
 
                 {player.armor ? (
-                  <button onClick={() => unequipItem('armor')} className="flex-1 bg-gray-800 p-2 rounded flex items-center justify-between border border-gray-600 hover:bg-red-900/50 hover:border-red-500 transition-colors group">
-                    <span className="text-sm text-white font-bold">{getItemDisplayName(player.armor)}</span>
-                    <span className="text-xs text-red-400 opacity-0 group-hover:opacity-100">卸下</span>
+                  <button onClick={() => unequipItem('armor')} className="flex-1 bg-gray-800 p-2 rounded flex flex-col items-start border border-gray-600 hover:bg-red-900/50 hover:border-red-500 transition-colors group">
+                    <div className="flex justify-between w-full">
+                      <span className="text-sm text-white font-bold">{getItemDisplayName(player.armor)}</span>
+                      <span className="text-xs text-red-400 opacity-0 group-hover:opacity-100">卸下</span>
+                    </div>
+                    {player.armor.desc && <span className="text-xs text-purple-300 mt-0.5">✨ {player.armor.desc}</span>}
                   </button>
                 ) : <div className="flex-1 bg-black/20 p-2 rounded text-center text-gray-600 text-sm border border-gray-800">無防具</div>}
               </div>
@@ -1576,7 +1791,14 @@ export default function FantasyAdventure() {
                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                     {EQUIPMENT.armor.map((armor, i) => (
                       <button key={i} onClick={() => buyEquipment('armor', armor)} disabled={player.gold < armor.price} className={`w-full p-3 rounded-lg text-left transition-all border ${player.gold >= armor.price ? 'bg-blue-900/40 hover:bg-blue-800/60 border-blue-500/50' : 'bg-gray-800/40 border-gray-700/50 opacity-60'}`}>
-                        <div className="flex justify-between items-center"><div><div className="font-bold text-white flex items-center">{armor.name}{getEquipmentComparison({ ...armor, type: 'armor' })}</div><div className="text-sm text-blue-200">防禦 +{armor.def}</div></div><div className="text-yellow-300 font-bold">{armor.price}G</div></div>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-bold text-white flex items-center">{armor.name}{getEquipmentComparison({ ...armor, type: 'armor' })}</div>
+                            <div className="text-sm text-blue-200">防禦 +{armor.def}</div>
+                            {armor.desc && <div className="text-xs text-purple-300 mt-0.5">✨ {armor.desc}</div>}
+                          </div>
+                          <div className="text-yellow-300 font-bold">{armor.price}G</div>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -1647,7 +1869,7 @@ export default function FantasyAdventure() {
                     {selectedItemIndex !== null && selectedMaterialIndex !== null ? (
                       <div className="text-center">
                         <div className="text-sm text-gray-300 mb-2">
-                          消耗: <span className="text-yellow-400 font-bold">{200 + (inventory[selectedItemIndex].refineLevel || 0) * 100}G</span> + 強化石 x1
+                          消耗: <span className="text-yellow-400 font-bold">{200 + (inventory[selectedItemIndex].refineLevel || 0) * 100}G</span> + 強化石 x{(inventory[selectedItemIndex].refineLevel || 0) + 1}
                         </div>
                         <button onClick={performRefine} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold">
                           開始強化 (+10% 數值)

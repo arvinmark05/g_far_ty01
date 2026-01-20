@@ -40,7 +40,7 @@ export const WEAPON_ARTS: Record<string, Skill> = {
     name: '快斬',
     desc: '造成 0.5倍 ATK 傷害',
     type: 'art',
-    cooldown: 8.0,
+    cooldown: 6.0,
     icon: '⚔️'
   },
   staff: {
@@ -48,7 +48,7 @@ export const WEAPON_ARTS: Record<string, Skill> = {
     name: '法力屏障',
     desc: '獲得 0.5倍 MATK 護盾',
     type: 'art',
-    cooldown: 8.0,
+    cooldown: 6.0,
     icon: '🛡️'
   },
   dagger: {
@@ -56,7 +56,7 @@ export const WEAPON_ARTS: Record<string, Skill> = {
     name: '影連擊',
     desc: '賦予自身「連擊」Buff，下次普攻連續攻擊2次',
     type: 'art',
-    cooldown: 6.0,
+    cooldown: 8.0,
     icon: '🗡️'
   },
   bow: {
@@ -64,7 +64,7 @@ export const WEAPON_ARTS: Record<string, Skill> = {
     name: '風之迴避',
     desc: '賦予自身「迴避態勢」Buff，強制閃避下一次攻擊',
     type: 'art',
-    cooldown: 6.0,
+    cooldown: 12.0,
     icon: '🏹'
   },
   mace: {
