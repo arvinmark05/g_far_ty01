@@ -5,39 +5,40 @@ import { WEAPON_PASSIVES } from './skills';
 export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
   weapons: [
     // Sword
-    { name: '木劍', atk: 5, price: 50, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.bash, maxSlots: 4 },
-    { name: '鐵劍', atk: 12, price: 3000, type: 'weapon', category: 'sword', maxSlots: 3 },
-    { name: '鋼劍', atk: 20, price: 8000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.pierce, maxSlots: 2 },
-    { name: '聖劍', atk: 35, price: 50000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.holy_slash, maxSlots: 0 },
+    { name: '老舊的劍', atk: 12, price: 1000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.bash, maxSlots: 3 },
+    { name: '直劍', atk: 24, price: 4000, type: 'weapon', category: 'sword', maxSlots: 4 },
+    { name: '雙手重劍', atk: 26, price: 8000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.pierce_slash, maxSlots: 2 },
+    { name: '聖堂騎士劍', atk: 35, price: 50000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.holy_slash, maxSlots: 0 },
     // Staff
-    { name: '木製長杖', atk: 2, price: 80, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.fireball, maxSlots: 4 },
-    { name: '法師短杖', atk: 5, price: 200, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.frost_bolt, maxSlots: 3 },
-    { name: '賢者之杖', atk: 8, price: 50000, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.thunder, maxSlots: 2 },
+    { name: '木製長杖', atk: 2, price: 800, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.fire_bolt, maxSlots: 4 },
+    { name: '寒霜法杖', atk: 5, price: 4800, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.frost_bolt, maxSlots: 3 },
+    { name: '巫毒長杖', atk: 6, price: 9000, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.poison_bolt, maxSlots: 3 },
+    { name: '雷霆長杖', atk: 8, price: 50000, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.thunder, maxSlots: 2 },
     // Dagger
-    { name: '短劍', atk: 10, price: 130, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.venomous, maxSlots: 3 },
-    { name: '刺客匕首', atk: 18, price: 380, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.assassin_edge, maxSlots: 2 },
-    { name: '銳利匕首', atk: 18, price: 500, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.bleed_stab, maxSlots: 4 },
+    { name: '短劍', atk: 10, price: 800, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.venomous, maxSlots: 3 },
+    { name: '刺客匕首', atk: 18, price: 3800, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.assassin_edge, maxSlots: 2 },
+    { name: '銳利匕首', atk: 18, price: 9000, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.bleed_stab, maxSlots: 4 },
     { name: '沙漠暮光', atk: 36, price: 66666, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.shadow_shift, maxSlots: 0 },
     { name: '破甲錐', atk: 10, price: 100000, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.armor_auger, maxSlots: 1 },
     // Bow
-    { name: '長弓', atk: 14, price: 250, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.precise_shot, maxSlots: 4 },
+    { name: '長弓', atk: 14, price: 750, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.precise_shot, maxSlots: 4 },
     { name: '獵人短弓', atk: 28, price: 4000, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.arrow_shot, maxSlots: 3 },
     { name: '精靈弓', atk: 24, price: 8000, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.magic_arrow, maxSlots: 2 },
     { name: '冰風使者', atk: 32, price: 50000, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.ice_shot, maxSlots: 0 },
     // Mace
     { name: '木棒', atk: 10, price: 100, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.skull_crack, maxSlots: 4 },
     { name: '鐵瓜錘', atk: 30, price: 3000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.holy_light, maxSlots: 3 },
-    { name: '戰鎚', atk: 50, price: 40000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.war_hammer, maxSlots: 1 },
+    { name: '戰鎚', atk: 40, price: 40000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.war_hammer, maxSlots: 1 },
     { name: '審判之槌', atk: 28, price: 88888, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.divine_judgment, maxSlots: 0 },
     // 特殊武器
     { name: '輕巧短刃', atk: 25, price: 8000, type: 'weapon', category: 'dagger', maxSlots: 3, affixes: ['double_attack', 'double_attack', 'double_attack'] }
   ],
   armor: [
-    { name: '布衣', def: 3, price: 40, type: 'armor', maxSlots: 4 },
-    { name: '皮甲', def: 8, price: 120, type: 'armor', maxSlots: 3 },
-    { name: '鎖甲', def: 15, price: 350, type: 'armor', maxSlots: 2 },
-    { name: '板甲', def: 25, price: 900, type: 'armor', maxSlots: 1 },
-    { name: '龍鱗甲', def: 40, price: 2500, type: 'armor', maxSlots: 0 },
+    { name: '布衣', def: 20, price: 400, type: 'armor', maxSlots: 4, armorEffect: { bonusAgi: 25 }, desc: 'AGI+25' },
+    { name: '皮甲', def: 35, price: 1200, type: 'armor', maxSlots: 3, armorEffect: { bonusDodge: 0.20 }, desc: '閃避率+20%' },
+    { name: '鎖甲', def: 50, price: 3500, type: 'armor', maxSlots: 3, armorEffect: { bonusVit: 25 }, desc: 'VIT+25' },
+    { name: '板甲', def: 120, price: 9000, type: 'armor', maxSlots: 2 },
+    { name: '龍鱗甲', def: 200, price: 25000, type: 'armor', maxSlots: 0 },
     // 特殊防具
     { name: '盜賊披風', def: 10, price: 6000, type: 'armor', maxSlots: 4, armorEffect: { bonusAgi: 10, bonusDodge: 0.15 }, desc: 'AGI+10, 閃避率+15%' },
     { name: '刺客套裝', def: 44, price: 44444, type: 'armor', maxSlots: 2, armorEffect: { bonusCritChance: 0.15, bonusCritDamage: 0.5 }, desc: '暴擊率+15%, 暴擊傷害+50%' },

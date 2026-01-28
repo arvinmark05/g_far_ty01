@@ -23,6 +23,7 @@ export interface Skill {
     applyBuff?: BuffType;        // 普攻附帶 Buff
     applyStatus?: StatusType;    // 普攻附帶異常狀態
     statusDuration?: number;     // 自訂狀態持續時間（秒）
+    statusChance?: number;       // 狀態觸發機率 (0~1)，預設1.0
     defPenetration?: number;     // 穿透防禦比率 (0~1)
     bonusMatkRatio?: number;     // 額外 MATK 傷害比率
     atbOnCrit?: number;          // 暴擊時充能 ATB

@@ -1078,7 +1078,7 @@ export class BattleHandler {
             if (newMonsterHp <= 0) result.monsterDied = true;
 
         } else if (player.weapon.category === 'staff') {
-            const shieldGain = Math.floor(stats.matk * 0.5);
+            const shieldGain = Math.floor(stats.matk * 0.8);
             result.playerUpdates!.shield = (player.shield || 0) + shieldGain;
             result.floatingTexts.push({ text: `+${shieldGain}`, type: 'shield', target: 'player' });
             result.logs.push(`⚔️ ${art.name}！獲得 ${shieldGain} 點護盾！`);
@@ -1174,7 +1174,7 @@ export class BattleHandler {
         switch (player.classKey) {
             case 'knight':
                 // 暈眩
-                skillDmg = Math.floor(stats.atk * 0.8 + stats.def * 2);
+                skillDmg = Math.floor(stats.atk * 0.5 + stats.def * 2);
                 skillLog = `${skill.name}造成 ${skillDmg} 傷害並暈眩敵人！`;
                 result.monsterUpdates!.statusEffects = this.applyStatus(monster, 'stun');
                 result.floatingTexts.push({ text: '💫Stun', type: 'stun', target: 'monster' });
@@ -1190,7 +1190,7 @@ export class BattleHandler {
                 break;
             case 'mage':
                 // 燃燒
-                skillDmg = Math.floor(stats.matk * 1.6);
+                skillDmg = Math.floor(stats.matk * 1.5);
                 skillLog = `${skill.name}！造成 ${skillDmg} 傷害並燃燒！`;
                 result.monsterUpdates!.statusEffects = this.applyStatus(monster, 'burn');
                 result.floatingTexts.push({ text: '🔥Burn', type: 'burn', target: 'monster' });
@@ -1202,7 +1202,7 @@ export class BattleHandler {
                 result.playerUpdates!.hp = currentHp - hpCost;
 
                 result.floatingTexts.push({ text: `-${hpCost}`, type: 'damage', target: 'player' });
-                skillDmg = Math.floor(stats.atk * 3 + hpCost * 2);
+                skillDmg = Math.floor(stats.atk * 2 + hpCost * 2);
                 skillLog = `犧牲 ${hpCost} 生命造成 ${skillDmg} 毀滅性傷害！`;
 
                 if ((result.playerUpdates!.hp as number) <= 0) result.playerDied = true;

@@ -44,7 +44,7 @@ export const MONSTERS: Monster[] = [
   },
   {
     name: '狂暴野狼', emoji: '🐺', role: 'RUSHER', floorRange: [101, 200],
-    hp: 120, atk: 16, def: 10, speed: 45, gold: 50, exp: 65,
+    hp: 120, atk: 20, def: 10, speed: 45, gold: 50, exp: 65,
     description: '森林深處的掠食者，獠牙鋒利。'
   },
   {
@@ -72,7 +72,7 @@ export const MONSTERS: Monster[] = [
   },
   {
     name: '炸藥哥布林', emoji: '🧨', role: 'RUSHER', floorRange: [201, 300],
-    hp: 250, atk: 24, def: 20, speed: 55, gold: 90, exp: 120,
+    hp: 250, atk: 35, def: 20, speed: 55, gold: 90, exp: 120,
     description: '背著危險的紅色火藥桶，必須速戰速決！'
   },
   {
@@ -83,7 +83,7 @@ export const MONSTERS: Monster[] = [
   // --- 亞種 ---
   {
     name: '熔岩巨像', emoji: '🌋', role: 'TANK', floorRange: [201, 300], isSubSpecies: true,
-    hp: 2400, atk: 30, def: 150, speed: 8, gold: 120, exp: 180,
+    hp: 2400, atk: 50, def: 150, speed: 8, gold: 120, exp: 180,
     onHitEffect: { applyStatus: 'burn', statusChance: 0.95 },
     description: '核心是流動的岩漿，攻擊它的人會被灼傷。'
   },
@@ -98,7 +98,7 @@ export const MONSTERS: Monster[] = [
   },
   {
     name: '詛咒魔導書', emoji: '📖', role: 'RUSHER', floorRange: [301, 400],
-    hp: 600, atk: 40, def: 40, speed: 60, gold: 180, exp: 250,
+    hp: 600, atk: 60, def: 40, speed: 60, gold: 180, exp: 250,
     description: '記載著禁忌魔法的書本，會發射強力光束。'
   },
   {
@@ -125,7 +125,7 @@ export const MONSTERS: Monster[] = [
   },
   {
     name: '暗影刺客', emoji: '🥷', role: 'RUSHER', floorRange: [401, 500],
-    hp: 1500, atk: 60, def: 50, speed: 80, gold: 450, exp: 600,
+    hp: 1500, atk: 120, def: 50, speed: 80, gold: 450, exp: 600,
     description: '隱藏在風沙中的殺手，一擊致命。'
   },
   {

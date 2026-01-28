@@ -301,7 +301,7 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     // 區域 1: 地城迷宮 (Floor 1-100) - 入門裝備
     // ═══════════════════════════════════════════
     '史萊姆': [
-        { item: EQUIPMENT.weapons[0], rate: 0.12 },   // 木劍 (sword)
+        { item: EQUIPMENT.weapons[0], rate: 0.12 },   // 老舊的劍 (sword)
         { item: EQUIPMENT.armor[0], rate: 0.10 },     // 布衣
     ],
     '洞穴蝙蝠': [
@@ -320,7 +320,7 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     ],
     // BOSS
     '巨魔領主': [
-        { item: EQUIPMENT.weapons[1], rate: 0.50 },  // 鐵劍 (保證級)
+        { item: EQUIPMENT.weapons[1], rate: 0.50 },  // 直劍 (保證級)
         { item: EQUIPMENT.armor[1], rate: 0.50 },    // 皮甲
         { item: EQUIPMENT.weapons[4], rate: 0.25 },  // 木製長杖
         { item: MATERIALS[0], rate: 1.0 },           // 強化石 (保證)
@@ -330,7 +330,7 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     // 區域 2: 陰森森林 (Floor 101-200) - 進階裝備
     // ═══════════════════════════════════════════
     '骷髏兵': [
-        { item: EQUIPMENT.weapons[1], rate: 0.10 },  // 鐵劍
+        { item: EQUIPMENT.weapons[1], rate: 0.10 },  // 直劍
         { item: EQUIPMENT.armor[1], rate: 0.08 },    // 皮甲
         { item: EQUIPMENT.weapons[12], rate: 0.06 }, // 長弓
     ],
@@ -340,7 +340,7 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     ],
     '殭屍蘑菇': [
         { item: EQUIPMENT.armor[2], rate: 0.10 },    // 鎖甲
-        { item: EQUIPMENT.weapons[5], rate: 0.08 },  // 法師短杖
+        { item: EQUIPMENT.weapons[5], rate: 0.08 },  // 寒霜法杖
     ],
     // 亞種 - 掉落冰系裝備
     '寒霜座狼': [
@@ -350,9 +350,9 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     ],
     // BOSS
     '死靈法師': [
-        { item: EQUIPMENT.weapons[2], rate: 0.50 },  // 鋼劍
+        { item: EQUIPMENT.weapons[2], rate: 0.50 },  // 雙手重劍
         { item: EQUIPMENT.armor[2], rate: 0.50 },    // 鎖甲
-        { item: EQUIPMENT.weapons[5], rate: 0.35 },  // 法師短杖
+        { item: EQUIPMENT.weapons[5], rate: 0.35 },  // 寒霜法杖
         { item: MATERIALS[0], rate: 1.0 },           // 強化石
         { item: MATERIALS[5], rate: 0.30 },          // 吸血符文
     ],
@@ -361,7 +361,7 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     // 區域 3: 礦山山脈 (Floor 201-300) - 高級裝備
     // ═══════════════════════════════════════════
     '獸人戰士': [
-        { item: EQUIPMENT.weapons[2], rate: 0.08 },  // 鋼劍
+        { item: EQUIPMENT.weapons[2], rate: 0.08 },  // 雙手重劍
         { item: EQUIPMENT.armor[3], rate: 0.06 },    // 板甲
         { item: EQUIPMENT.weapons[17], rate: 0.05 }, // 鐵瓜錘
     ],
@@ -383,9 +383,9 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     ],
     // BOSS
     '遠古巨龍': [
-        { item: EQUIPMENT.weapons[3], rate: 0.60 },  // 聖劍
+        { item: EQUIPMENT.weapons[3], rate: 0.60 },  // 聖堂騎士劍
         { item: EQUIPMENT.armor[4], rate: 0.50 },    // 龍鱗甲
-        { item: EQUIPMENT.weapons[6], rate: 0.40 },  // 賢者之杖
+        { item: EQUIPMENT.weapons[6], rate: 0.40 },  // 雷霆長杖
         { item: MATERIALS[0], rate: 1.0 },           // 強化石
         { item: MATERIALS[7], rate: 0.35 },          // 致命符文
     ],
@@ -394,12 +394,12 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
     // 區域 4: 舊文明遺跡 (Floor 301-400) - 頂級裝備
     // ═══════════════════════════════════════════
     '遺跡守衛': [
-        { item: EQUIPMENT.weapons[3], rate: 0.06 },  // 聖劍
+        { item: EQUIPMENT.weapons[3], rate: 0.06 },  // 聖堂騎士劍
         { item: EQUIPMENT.armor[4], rate: 0.05 },    // 龍鱗甲
         { item: EQUIPMENT.weapons[14], rate: 0.06 }, // 精靈弓
     ],
     '詛咒魔導書': [
-        { item: EQUIPMENT.weapons[6], rate: 0.08 },  // 賢者之杖
+        { item: EQUIPMENT.weapons[6], rate: 0.08 },  // 雷霆長杖
         { item: EQUIPMENT.armor[7], rate: 0.04 },    // 獵人皮衣
         { item: MATERIALS[4], rate: 0.12 },          // 智慧符文
     ],

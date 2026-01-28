@@ -8,28 +8,28 @@ export const AFFIXES: Record<string, Affix> = {
     name: '力量的',
     type: 'stat',
     stat: 'str',
-    value: 10
+    value: 20
   },
   agi_boost: {
     id: 'agi_boost',
     name: '迅捷的',
     type: 'stat',
     stat: 'agi',
-    value: 10
+    value: 20
   },
   vit_boost: {
     id: 'vit_boost',
     name: '堅韌的',
     type: 'stat',
     stat: 'vit',
-    value: 10
+    value: 20
   },
   int_boost: {
     id: 'int_boost',
     name: '智慧的',
     type: 'stat',
     stat: 'int',
-    value: 10
+    value: 20
   },
 
   // Passive Affixes (Special Effects)
@@ -64,14 +64,14 @@ export const AFFIXES: Record<string, Affix> = {
     name: '尖刺的',
     type: 'passive',
     passiveEffect: 'thorns',
-    value: 0.2 // Reflect 20% damage
+    value: 0.3 // Reflect 30% damage
   },
   elusive: {
     id: 'elusive',
     name: '靈巧的',
     type: 'passive',
     passiveEffect: 'dodge_chance',
-    value: 0.1 // +10% dodge
+    value: 0.15 // +15% dodge
   },
 
   // ═══════════════════════════════════════════

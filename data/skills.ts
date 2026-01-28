@@ -5,22 +5,22 @@ import { Skill } from '../types';
 export const CLASS_SKILLS: Record<string, Skill> = {
   shield_bash: {
     id: 'shield_bash',
-    name: '聖盾衝擊',
-    desc: '造成防禦力相關傷害並擊退敵人ATB',
+    name: '盾擊',
+    desc: '造成傷害並擊暈敵人，Def越高傷害越高',
     type: 'active',
     cooldown: 5.0
   },
-  weakness_strike: {
-    id: 'weakness_strike',
-    name: '弱點刺擊',
-    desc: '必定暴擊造成大量傷害',
+  poison_blade: {
+    id: 'poison_blade',
+    name: '毒刃',
+    desc: '攻擊弱點並使敵人中毒',
     type: 'active',
     cooldown: 5.0
   },
-  mana_overload: {
-    id: 'mana_overload',
-    name: '魔力超載',
-    desc: '消耗魔力造成3倍魔法傷害',
+  fireball_skill: {
+    id: 'fireball_skill',
+    name: '火球術',
+    desc: '造成魔法傷害並燃燒敵人',
     type: 'active',
     cooldown: 5.0
   },
@@ -46,7 +46,7 @@ export const WEAPON_ARTS: Record<string, Skill> = {
   staff: {
     id: 'mana_barrier',
     name: '法力屏障',
-    desc: '獲得 0.5倍 MATK 護盾',
+    desc: '獲得 MATK*0.8 的護盾',
     type: 'art',
     cooldown: 6.0,
     icon: '🛡️'
@@ -82,61 +82,69 @@ export const WEAPON_PASSIVES: Record<string, Skill> = {
   bash: {
     id: 'bash',
     name: '重擊',
-    desc: '25%機率造成1.5倍物理傷害',
+    desc: '25%機率造成1.8倍物理傷害',
     type: 'passive',
     triggerRate: 0.25,
-    atkMultiplier: 1.5,
-    matkMultiplier: 0
-  },
-  frenzy: {
-    id: 'frenzy',
-    name: '狂擊',
-    desc: '30%機率造成1.8倍物理傷害',
-    type: 'passive',
-    triggerRate: 0.3,
     atkMultiplier: 1.8,
     matkMultiplier: 0
   },
-  pierce: {
-    id: 'pierce',
+  pierce_slash: {
+    id: 'pierce_slash',
     name: '破甲斬',
-    desc: '35%機率造成2.2倍物理傷害',
+    desc: '25%機率造成1.5倍傷害並穿透50%防禦',
     type: 'passive',
-    triggerRate: 0.35,
-    atkMultiplier: 2.2,
-    matkMultiplier: 0
+    passiveType: 'trigger',
+    triggerRate: 0.25,
+    atkMultiplier: 1.5,
+    matkMultiplier: 0,
+    continuousEffect: { defPenetration: 0.5 }
   },
   holy_slash: {
     id: 'holy_slash',
     name: '聖光斬',
-    desc: '40%機率造成混合傷害',
+    desc: '50%機率造成混合傷害',
     type: 'passive',
-    triggerRate: 0.4,
-    atkMultiplier: 2.0,
+    triggerRate: 0.5,
+    atkMultiplier: 1.5,
     matkMultiplier: 1.5
   },
-  fireball: {
-    id: 'fireball',
+  fire_bolt: {
+    id: 'fire_bolt',
     name: '火球術',
-    desc: '100%發動，造成1倍魔法傷害',
+    desc: '造成1倍魔法傷害，並燃燒敵人',
     type: 'passive',
+    passiveType: 'trigger',
     triggerRate: 1.0,
     atkMultiplier: 0,
-    matkMultiplier: 1.0
+    matkMultiplier: 1.0,
+    continuousEffect: { applyStatus: 'burn' }
   },
   frost_bolt: {
     id: 'frost_bolt',
-    name: '冰霜箭',
-    desc: '100%發動，造成1.3倍魔法傷害',
+    name: '寒冰箭',
+    desc: '造成1.0倍魔法傷害，25%機率凍結敵人',
     type: 'passive',
+    passiveType: 'trigger',
     triggerRate: 1.0,
     atkMultiplier: 0,
-    matkMultiplier: 1.3
+    matkMultiplier: 1.0,
+    continuousEffect: { applyStatus: 'frozen', statusChance: 0.25 }
+  },
+  poison_bolt: {
+    id: 'poison_bolt',
+    name: '毒箭術',
+    desc: '造成1.2倍魔法傷害，並使敵人中毒',
+    type: 'passive',
+    passiveType: 'trigger',
+    triggerRate: 1.0,
+    atkMultiplier: 0,
+    matkMultiplier: 1.2,
+    continuousEffect: { applyStatus: 'poison' }
   },
   thunder: {
     id: 'thunder',
-    name: '雷霆術',
-    desc: '100%發動，造成1.8倍魔法傷害',
+    name: '雷鳴術',
+    desc: '造成1.8倍魔法傷害',
     type: 'passive',
     passiveType: 'trigger',
     triggerRate: 1.0,
@@ -156,10 +164,10 @@ export const WEAPON_PASSIVES: Record<string, Skill> = {
   assassin_edge: {
     id: 'assassin_edge',
     name: '刺客之刃',
-    desc: '暴擊時充能ATB 40',
+    desc: '暴擊時充能ATB 50',
     type: 'passive',
     passiveType: 'continuous',
-    continuousEffect: { atbOnCrit: 40 }
+    continuousEffect: { atbOnCrit: 50 }
   },
 
   // === Bow 被動 ===
@@ -202,19 +210,16 @@ export const WEAPON_PASSIVES: Record<string, Skill> = {
   armor_auger: {
     id: 'armor_auger',
     name: '破甲錐',
-    desc: '100%發動 將目標防禦轉為增傷',
+    desc: '將目標防禦轉為增傷',
     type: 'passive',
-    passiveType: 'trigger',
-    triggerRate: 1.0,
-    atkMultiplier: 1.0,
-    matkMultiplier: 0,
+    passiveType: 'continuous',
     continuousEffect: { defenseReverse: true }
   },
 
   // === 進階 Bow 被動 ===
   arrow_shot: {
     id: 'arrow_shot',
-    name: '穿云箭',
+    name: '迅捷射擊',
     desc: '100%發動 ATK*0.8 + AGI*1 傷害',
     type: 'passive',
     passiveType: 'trigger',
@@ -225,7 +230,7 @@ export const WEAPON_PASSIVES: Record<string, Skill> = {
   },
   magic_arrow: {
     id: 'magic_arrow',
-    name: '魔法箭',
+    name: '魔力箭矢',
     desc: '普攻附加 MATK*0.8 魔法傷害',
     type: 'passive',
     passiveType: 'continuous',
@@ -233,7 +238,7 @@ export const WEAPON_PASSIVES: Record<string, Skill> = {
   },
   ice_shot: {
     id: 'ice_shot',
-    name: '冰寒箭',
+    name: '冰霜箭矢',
     desc: '30%發動 1.4倍傷害 + 冰凍',
     type: 'passive',
     passiveType: 'trigger',
