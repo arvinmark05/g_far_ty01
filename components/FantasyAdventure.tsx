@@ -15,6 +15,19 @@ import { FloatingText, StatusEffect, BuffEffect, Item, StoryScript, GameFlags } 
 import { StoryHandler } from '../utils/StoryHandler';
 import DialogueOverlay from './DialogueOverlay';
 
+// Helper: 計算藥水上限
+const getMaxPotions = (player: any): number => {
+  if (!player?.flags?.lily_joined) return 0; // lily 未加入前無法使用藥水
+  let max = 2; // lily_joined 後基礎 2 瓶
+  // 每完成一個 boss 區域 +1
+  if (player.flags.floor_100_cleared) max += 1;
+  if (player.flags.floor_200_cleared) max += 1;
+  if (player.flags.floor_300_cleared) max += 1;
+  if (player.flags.floor_400_cleared) max += 1;
+  if (player.flags.floor_500_cleared) max += 1;
+  return max;
+};
+
 export default function FantasyAdventure() {
   // --- State ---
   const [gameState, setGameState] = useState('class-select');
@@ -60,6 +73,7 @@ export default function FantasyAdventure() {
   const [screenShake, setScreenShake] = useState(false);
   const [monsterShake, setMonsterShake] = useState(false);
   const [hitFlash, setHitFlash] = useState(false);
+  const [monsterDefeated, setMonsterDefeated] = useState(false);
 
   const battleLogRef = useRef<HTMLDivElement>(null);
   const floatingTextIdRef = useRef(0);
@@ -524,7 +538,7 @@ export default function FantasyAdventure() {
       level: 1,
       weapon: null,
       armor: null,
-      potions: 3,
+      potions: 0,
       achievements: [],
       maxDamage: 0,
       statusEffects: [],
@@ -567,6 +581,7 @@ export default function FantasyAdventure() {
     if (nextEvent.type === 'camp') {
       enterCamp(nextEvent.depth);
     } else {
+      setMonsterDefeated(false);
       encounterMonster(fromCamp ? lastCampDepth : 0);
     }
   };
@@ -577,7 +592,8 @@ export default function FantasyAdventure() {
     if (campDepth > maxDepth) setMaxDepth(campDepth);
 
     const stats = calculateStats(player);
-    setPlayer((prev: any) => ({ ...prev, hp: stats.maxHp, shield: stats.maxShield, statusEffects: [] }));
+    const maxPotions = getMaxPotions(player);
+    setPlayer((prev: any) => ({ ...prev, hp: stats.maxHp, shield: stats.maxShield, statusEffects: [], potions: maxPotions }));
     saveGame(false);
 
     // Check for camp story trigger
@@ -609,6 +625,7 @@ export default function FantasyAdventure() {
 
     // === BOSS 職能: HP < 25% 時進入狂暴模式 (在 BattleHandler 中處理) ===
 
+    setMonsterDefeated(false);
     setCurrentMonster(monster);
     setDepth(newDepth);
     if (newDepth > maxDepth) setMaxDepth(newDepth);
@@ -702,6 +719,7 @@ export default function FantasyAdventure() {
   // --- End Actions ---
 
   const handleMonsterDefeat = () => {
+    setMonsterDefeated(true);
     const goldGain = currentMonster.gold;
     const newGold = player.gold + goldGain;
     const newExp = player.exp + currentMonster.exp;
@@ -1353,7 +1371,7 @@ export default function FantasyAdventure() {
             {/* ... (Header and Stats Section - Same as existing) */}
             <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4 mb-4 border border-green-500/30 shadow-lg relative z-30">
               <div className="flex justify-between items-start mb-4 border-b border-green-500/20 pb-2">
-                <div><div className="text-2xl font-bold text-green-300 flex items-center gap-2"><span>{classData.emoji}</span>{player.class}<span className="text-sm bg-green-800 text-white px-2 py-0.5 rounded-full">Lv.{player.level}</span></div></div>
+                <div><div className="text-2xl font-bold text-green-300 flex items-center gap-2"><span>{classData.emoji}</span><span className="text-white mr-2">{player.name}</span>{player.class}<span className="text-sm bg-green-800 text-white px-2 py-0.5 rounded-full">Lv.{player.level}</span></div></div>
                 <div className="flex gap-2 items-center">
                   <div className="flex items-center gap-1.5 bg-yellow-900/40 px-3 py-1.5 rounded-lg border border-yellow-500/30 text-yellow-300 mr-2"><Coins size={14} /><span className="font-bold text-sm">{player.gold}</span></div>
                   <button onClick={() => saveGame(true)} className="flex items-center gap-1 bg-blue-600/50 hover:bg-blue-600 px-3 py-1.5 rounded text-sm text-white transition-all"><Save size={16} /></button>
@@ -1383,6 +1401,7 @@ export default function FantasyAdventure() {
                   <div className="bg-black/30 p-2 rounded border border-gray-700/50 flex justify-between items-center relative group">
                     <div className="flex items-center gap-2 overflow-hidden"><div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-lg">🛡️</div><div className="min-w-0"><div className="text-xs text-gray-400">身體防具</div><div className="font-bold text-sm text-white truncate">{player.armor ? getItemDisplayName(player.armor) : '無裝備'}</div></div></div>
                     {player.armor && <button onClick={() => unequipItem('armor')} className="text-red-400 hover:text-red-300 p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="卸下"><MinusCircle size={16} /></button>}
+                    {player.armor?.desc && (<div className="absolute top-full left-0 mt-1 w-full bg-gray-900 p-2 rounded text-[10px] text-gray-300 border border-gray-700 z-50 hidden group-hover:block pointer-events-none shadow-xl"><div className="text-purple-300 font-bold mb-1">✨ 裝備效果</div>{player.armor.desc}</div>)}
                   </div>
                 </div>
               </div>
@@ -1419,20 +1438,30 @@ export default function FantasyAdventure() {
                 <h3 className="text-lg font-bold text-purple-300 mb-2">📦 道具箱</h3>
                 <div className="grid gap-2">
                   {inventory.map((item, index) => (
-                    <div key={index} className="bg-purple-900/20 p-2 rounded-lg flex justify-between items-center border border-purple-500/10">
-                      <div className="text-white text-sm">
-                        {item.type === 'weapon' ? '⚔️' : item.type === 'armor' ? '🛡️' : '💎'}
-                        <span className="font-bold ml-1">{getItemDisplayName(item)}</span>
-                        {(item.quantity || 1) > 1 && <span className="text-yellow-400 font-bold ml-1">x{item.quantity}</span>}
+                    <div key={index} className="bg-purple-900/20 p-2 rounded-lg flex flex-col border border-purple-500/10">
+                      <div className="flex justify-between items-center">
+                        <div className="text-white text-sm">
+                          {item.type === 'weapon' ? '⚔️' : item.type === 'armor' ? '🛡️' : '💎'}
+                          <span className="font-bold ml-1">{getItemDisplayName(item)}</span>
+                          {(item.quantity || 1) > 1 && <span className="text-yellow-400 font-bold ml-1">x{item.quantity}</span>}
+                          {!item.isMaterial && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({item.type === 'weapon' ? `攻+${getRefinedStat(item.atk, item.refineLevel)}` : `防+${getRefinedStat(item.def, item.refineLevel)}`})
+                            </span>
+                          )}
+                          {getEquipmentComparison(item)}
+                        </div>
                         {!item.isMaterial && (
-                          <span className="text-xs text-gray-400 ml-2">
-                            ({item.type === 'weapon' ? `攻+${getRefinedStat(item.atk, item.refineLevel)}` : `防+${getRefinedStat(item.def, item.refineLevel)}`})
-                          </span>
+                          <button onClick={() => equipItem(item, index)} className="text-xs bg-green-600 hover:bg-green-500 px-2 py-1 rounded text-white font-bold">裝備</button>
                         )}
-                        {getEquipmentComparison(item)}
                       </div>
-                      {!item.isMaterial && (
-                        <button onClick={() => equipItem(item, index)} className="text-xs bg-green-600 hover:bg-green-500 px-2 py-1 rounded text-white font-bold">裝備</button>
+                      {item.type === 'weapon' && (item.skill || item.desc) && (
+                        <div className="mt-1 text-xs">
+                          {item.skill ? <span className="text-purple-300 bg-purple-900/30 p-1 rounded inline-block">⚡ {item.skill.desc}</span> : item.desc && <span className="text-gray-300 bg-gray-700/50 p-1 rounded inline-block">📜 {item.desc}</span>}
+                        </div>
+                      )}
+                      {item.type === 'armor' && item.desc && (
+                        <div className="mt-1 text-xs text-purple-300 bg-purple-900/30 p-1 rounded inline-block">✨ {item.desc}</div>
                       )}
                     </div>
                   ))}
@@ -1554,6 +1583,10 @@ export default function FantasyAdventure() {
                     25% { transform: translateX(-5px) rotate(-1deg); }
                     75% { transform: translateX(5px) rotate(1deg); }
                 }
+                @keyframes dropFade {
+                    0% { transform: translateY(0); opacity: 1; }
+                    100% { transform: translateY(15vh); opacity: 0; }
+                }
             `}</style>
           <SettingsModal />
 
@@ -1587,7 +1620,7 @@ export default function FantasyAdventure() {
 
             <div className={`mt-8 backdrop-blur-sm rounded-xl p-6 mb-4 text-center transition-all duration-300 relative shrink-0 ${currentMonster.isBoss ? 'bg-red-950/80 border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)] scale-105' : 'bg-black/40 border border-red-500/30'} ${monsterShake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}>
               <div className={`absolute inset-0 bg-white mix-blend-overlay transition-opacity duration-100 rounded-xl pointer-events-none ${hitFlash ? 'opacity-40' : 'opacity-0'}`}></div>
-              <div className="text-8xl mb-2 animate-[bounce_3s_infinite] relative">{currentMonster.emoji}</div>
+              <div className={`text-8xl mb-2 relative ${monsterDefeated ? 'animate-[dropFade_0.6s_ease-in_forwards]' : 'animate-[bounce_3s_infinite]'}`}>{currentMonster.emoji}</div>
 
               <div className="max-w-md mx-auto relative z-10">
                 <div className={`text-2xl font-bold mb-1 ${currentMonster.isBoss ? 'text-red-400' : 'text-gray-200'}`}>{currentMonster.isBoss && '💀 '}{currentMonster.name}{currentMonster.isBoss && ' 💀'}</div>
@@ -1628,7 +1661,7 @@ export default function FantasyAdventure() {
               <div className="flex justify-between items-center mb-1">
                 <div className="flex flex-col">
                   <div className="text-white font-bold text-lg flex items-center gap-2">
-                    {player.class} <span className="text-sm text-gray-400">Lv.{player.level}</span>
+                    <span className="mr-2">{player.name}</span>{player.class} <span className="text-sm text-gray-400">Lv.{player.level}</span>
                     {/* 玩家 Buff icons - 在左 */}
                     {player.buffs && player.buffs.length > 0 && (
                       <div className="flex gap-1 ml-1">
@@ -1779,7 +1812,7 @@ export default function FantasyAdventure() {
                     {EQUIPMENT.weapons.map((weapon, i) => (
                       <button key={i} onClick={() => buyEquipment('weapon', weapon)} disabled={player.gold < weapon.price} className={`w-full p-3 rounded-lg text-left transition-all border relative overflow-hidden ${player.gold >= weapon.price ? 'bg-orange-900/40 hover:bg-orange-800/60 border-orange-500/50' : 'bg-gray-800/40 border-gray-700/50 opacity-60'}`}>
                         <div className="flex justify-between items-start mb-1 relative z-10"><div><div className="font-bold text-white flex items-center">{weapon.name}{getEquipmentComparison({ ...weapon, type: 'weapon' })}</div><div className="text-sm text-orange-200">攻擊 +{weapon.atk}</div></div><div className="text-yellow-300 font-bold">{weapon.price}G</div></div>
-                        {weapon.skill && (<div className="text-xs text-purple-300 mt-1 bg-purple-900/30 p-1.5 rounded inline-block mr-1">⚡ {weapon.skill.desc}</div>)}
+                        {weapon.skill ? (<div className="text-xs text-purple-300 mt-1 bg-purple-900/30 p-1.5 rounded inline-block mr-1">⚡ {weapon.skill.desc}</div>) : weapon.desc && (<div className="text-xs text-gray-300 mt-1 bg-gray-700/50 p-1.5 rounded inline-block mr-1">📜 {weapon.desc}</div>)}
                         {/* @ts-ignore */}
                         <div className="text-xs text-orange-300 mt-1 bg-orange-900/30 p-1.5 rounded inline-block">⚔️ {WEAPON_ARTS[weapon.category].name}</div>
                       </button>
@@ -1802,11 +1835,7 @@ export default function FantasyAdventure() {
                       </button>
                     ))}
                   </div>
-                  <div className="mt-4 pt-4 border-t border-blue-500/30">
-                    <button onClick={() => { if (player.gold >= 50) { setPlayer((prev: any) => ({ ...prev, gold: prev.gold - 50, potions: prev.potions + 1 })); } }} disabled={player.gold < 50} className={`w-full p-3 rounded-xl border flex items-center justify-between ${player.gold >= 50 ? 'bg-green-900/40 border-green-500/50 hover:bg-green-800/60' : 'bg-gray-800 border-gray-700 opacity-50'}`}>
-                      <div className="text-left"><div className="text-white font-bold">生命藥水</div><div className="text-xs text-green-300">恢復 50% HP</div></div><div className="text-yellow-300 font-bold">50G</div>
-                    </button>
-                  </div>
+
                 </div>
               </div>
             )}

@@ -432,6 +432,7 @@ export class BattleHandler {
         let defenseReverse = false;
         let agiAtkRatio = 0;
         let healIntRatio = 0;
+        let triggeredSkillName: string | null = null;
 
         // === 新增: 精神抖擻效果 (HP > 95% 時 ATK 加成) ===
         const maxMightData = this.getAffixStackedValue(player, 'max_might');
@@ -456,13 +457,18 @@ export class BattleHandler {
                 // 觸發類被動
                 if (Math.random() < (skill.triggerRate || 0)) {
                     attackType = skill.name;
+                    triggeredSkillName = skill.name;
                     physicalDmg = stats.atk * (skill.atkMultiplier || 0);
                     magicalDmg = stats.matk * (skill.matkMultiplier || 0);
                     if (skill.atkMultiplier === 0) physicalDmg = 0;
 
                     // 觸發類的附加效果
                     if (skill.continuousEffect?.applyStatus) {
-                        shouldApplyStatus = skill.continuousEffect.applyStatus;
+                        const chance = skill.continuousEffect.statusChance ?? 1.0;
+                        if (Math.random() < chance) {
+                            shouldApplyStatus = skill.continuousEffect.applyStatus;
+                            statusDuration = skill.continuousEffect.statusDuration;
+                        }
                     }
                     if (skill.continuousEffect?.defPenetration) {
                         defPenetration += skill.continuousEffect.defPenetration;
@@ -484,8 +490,11 @@ export class BattleHandler {
                 // 持續效果類被動 (每次攻擊都觸發)
                 attackType = skill.name;
                 if (skill.continuousEffect?.applyStatus) {
-                    shouldApplyStatus = skill.continuousEffect.applyStatus;
-                    statusDuration = skill.continuousEffect.statusDuration;
+                    const chance = skill.continuousEffect.statusChance ?? 1.0;
+                    if (Math.random() < chance) {
+                        shouldApplyStatus = skill.continuousEffect.applyStatus;
+                        statusDuration = skill.continuousEffect.statusDuration;
+                    }
                 }
                 if (skill.continuousEffect?.bonusMatkRatio) {
                     magicalDmg = stats.matk * skill.continuousEffect.bonusMatkRatio;
@@ -600,6 +609,10 @@ export class BattleHandler {
             target: 'monster'
         });
 
+        // 觸發 passive 時顯示發動訊息
+        if (triggeredSkillName) {
+            result.logs.push(`你使用了「${triggeredSkillName}」！`);
+        }
         result.logs.push(`你對 ${monster.name} 造成 ${playerDmg} 點傷害！`);
         result.effects = { monsterShake: true, hitFlash: true };
 
@@ -1227,6 +1240,7 @@ export class BattleHandler {
         if (frozenIndex >= 0) {
             skillDmg *= 2;
             result.floatingTexts.push({ text: 'Shatter!', type: 'crit', target: 'monster' });
+            result.logs.push('冰凍碎裂！造成雙倍傷害！');
 
             // 移除冰凍
             let effects = result.monsterUpdates!.statusEffects || [...mEffects];
@@ -1251,11 +1265,11 @@ export class BattleHandler {
     // 6. 使用藥水
     static usePotion(player: any): BattleResult {
         const stats = calculateStats(player);
-        const healAmount = Math.floor(stats.maxHp * 0.5);
+        const healAmount = Math.floor(stats.maxHp * 0.35);
         const newHp = Math.min(player.hp + healAmount, stats.maxHp);
 
         return {
-            logs: [`使用藥水恢復 ${healAmount} HP！`],
+            logs: [`莉莉將恢復藥水砸向你，恢復 ${healAmount} HP！`],
             floatingTexts: [{ text: `+${healAmount}`, type: 'heal', target: 'player' }],
             effects: {},
             playerUpdates: { hp: newHp, potions: player.potions - 1 }

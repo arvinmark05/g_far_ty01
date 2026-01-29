@@ -5,8 +5,8 @@ import { WEAPON_PASSIVES } from './skills';
 export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
   weapons: [
     // Sword
-    { name: '老舊的劍', atk: 12, price: 1000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.bash, maxSlots: 3 },
-    { name: '直劍', atk: 24, price: 4000, type: 'weapon', category: 'sword', maxSlots: 4 },
+    { name: '老舊的劍', atk: 16, price: 1000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.bash, maxSlots: 3 },
+    { name: '直劍', atk: 24, price: 4000, type: 'weapon', category: 'sword', maxSlots: 4, desc: '老朋友，安心與信賴的選擇' },
     { name: '雙手重劍', atk: 26, price: 8000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.pierce_slash, maxSlots: 2 },
     { name: '聖堂騎士劍', atk: 35, price: 50000, type: 'weapon', category: 'sword', skill: WEAPON_PASSIVES.holy_slash, maxSlots: 0 },
     // Staff
@@ -15,23 +15,23 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
     { name: '巫毒長杖', atk: 6, price: 9000, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.poison_bolt, maxSlots: 3 },
     { name: '雷霆長杖', atk: 8, price: 50000, type: 'weapon', category: 'staff', skill: WEAPON_PASSIVES.thunder, maxSlots: 2 },
     // Dagger
-    { name: '短劍', atk: 10, price: 800, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.venomous, maxSlots: 3 },
-    { name: '刺客匕首', atk: 18, price: 3800, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.assassin_edge, maxSlots: 2 },
-    { name: '銳利匕首', atk: 18, price: 9000, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.bleed_stab, maxSlots: 4 },
+    { name: '短劍', atk: 14, price: 800, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.venomous, maxSlots: 3 },
+    { name: '刺客匕首', atk: 22, price: 3800, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.assassin_edge, maxSlots: 2 },
+    { name: '銳利匕首', atk: 24, price: 9000, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.bleed_stab, maxSlots: 4 },
     { name: '沙漠暮光', atk: 36, price: 66666, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.shadow_shift, maxSlots: 0 },
-    { name: '破甲錐', atk: 10, price: 100000, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.armor_auger, maxSlots: 1 },
+    { name: '破甲錐', atk: 20, price: 100000, type: 'weapon', category: 'dagger', skill: WEAPON_PASSIVES.armor_auger, maxSlots: 1 },
     // Bow
-    { name: '長弓', atk: 14, price: 750, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.precise_shot, maxSlots: 4 },
+    { name: '長弓', atk: 15, price: 750, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.precise_shot, maxSlots: 4 },
     { name: '獵人短弓', atk: 28, price: 4000, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.arrow_shot, maxSlots: 3 },
     { name: '精靈弓', atk: 24, price: 8000, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.magic_arrow, maxSlots: 2 },
     { name: '冰風使者', atk: 32, price: 50000, type: 'weapon', category: 'bow', skill: WEAPON_PASSIVES.ice_shot, maxSlots: 0 },
     // Mace
-    { name: '木棒', atk: 10, price: 100, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.skull_crack, maxSlots: 4 },
+    { name: '木棒', atk: 18, price: 100, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.skull_crack, maxSlots: 4 },
     { name: '鐵瓜錘', atk: 30, price: 3000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.holy_light, maxSlots: 3 },
     { name: '戰鎚', atk: 40, price: 40000, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.war_hammer, maxSlots: 1 },
     { name: '審判之槌', atk: 28, price: 88888, type: 'weapon', category: 'mace', skill: WEAPON_PASSIVES.divine_judgment, maxSlots: 0 },
     // 特殊武器
-    { name: '輕巧短刃', atk: 25, price: 8000, type: 'weapon', category: 'dagger', maxSlots: 3, affixes: ['double_attack', 'double_attack', 'double_attack'] }
+    { name: '輕巧短刃', atk: 26, price: 66666, type: 'weapon', category: 'dagger', maxSlots: 3, affixes: ['double_attack', 'double_attack', 'double_attack'], desc: '45%機率普攻連擊' }
   ],
   armor: [
     { name: '布衣', def: 20, price: 400, type: 'armor', maxSlots: 4, armorEffect: { bonusAgi: 25 }, desc: 'AGI+25' },
@@ -56,33 +56,33 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
 };
 
 export const MATERIALS: Item[] = [
-  { name: '強化石', type: 'material', price: 200, isMaterial: true, materialType: 'refine_stone', desc: '用於強化裝備 (+1~+9)' },
-  { name: '力量符文', type: 'material', price: 500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'str_boost', desc: '賦予裝備 "力量的" 詞綴 (+10 STR)' },
-  { name: '迅捷符文', type: 'material', price: 500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'agi_boost', desc: '賦予裝備 "迅捷的" 詞綴 (+10 AGI)' },
-  { name: '堅韌符文', type: 'material', price: 500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'vit_boost', desc: '賦予裝備 "堅韌的" 詞綴 (+10 VIT)' },
-  { name: '智慧符文', type: 'material', price: 500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'int_boost', desc: '賦予裝備 "智慧的" 詞綴 (+10 INT)' },
-  { name: '吸血符文', type: 'material', price: 1500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'life_steal', desc: '賦予裝備 "吸血的" 詞綴 (普攻吸血 10%)' },
-  { name: '放血符文', type: 'material', price: 1500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'bleed_hit', desc: '賦予裝備 "放血的" 詞綴 (普攻附加流血)' },
-  { name: '致命符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'deadly', desc: '賦予裝備 "致命的" 詞綴 (+15% 暴擊率)' },
-  { name: '殘暴符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'savage', desc: '賦予裝備 "殘暴的" 詞綴 (+50% 暴擊傷害)' },
-  { name: '尖刺符文', type: 'material', price: 1000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'spiked', desc: '賦予裝備 "尖刺的" 詞綴 (反彈 20% 傷害)' },
-  { name: '靈巧符文', type: 'material', price: 1000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'elusive', desc: '賦予裝備 "靈巧的" 詞綴 (+10% 閃避率)' },
+  { name: '強化石', type: 'material', price: 1000, isMaterial: true, materialType: 'refine_stone', desc: '用於強化裝備 (+1~+9)' },
+  { name: '力量符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'str_boost', desc: '賦予裝備 "力量的" 詞綴 (+10 STR)' },
+  { name: '迅捷符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'agi_boost', desc: '賦予裝備 "迅捷的" 詞綴 (+10 AGI)' },
+  { name: '堅韌符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'vit_boost', desc: '賦予裝備 "堅韌的" 詞綴 (+10 VIT)' },
+  { name: '智慧符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'int_boost', desc: '賦予裝備 "智慧的" 詞綴 (+10 INT)' },
+  { name: '吸血符文', type: 'material', price: 15000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'life_steal', desc: '賦予裝備 "吸血的" 詞綴 (普攻吸血 10%)' },
+  { name: '放血符文', type: 'material', price: 15000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'bleed_hit', desc: '賦予裝備 "放血的" 詞綴 (普攻附加流血)' },
+  { name: '致命符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'deadly', desc: '賦予裝備 "致命的" 詞綴 (+15% 暴擊率)' },
+  { name: '殘暴符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'savage', desc: '賦予裝備 "殘暴的" 詞綴 (+50% 暴擊傷害)' },
+  { name: '尖刺符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'spiked', desc: '賦予裝備 "尖刺的" 詞綴 (反彈 20% 傷害)' },
+  { name: '靈巧符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'elusive', desc: '賦予裝備 "靈巧的" 詞綴 (+10% 閃避率)' },
 
   // ═══════════════════════════════════════════
   // 新增的 14 種符文 (Designed by Game Producer)
   // ═══════════════════════════════════════════
-  { name: '猛毒符文', type: 'material', price: 1800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'poison_hit', desc: '賦予裝備 "猛毒的" 詞綴 (普攻附加中毒)' },
-  { name: '灼熱符文', type: 'material', price: 1800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'burn_hit', desc: '賦予裝備 "灼熱的" 詞綴 (普攻附加燃燒)' },
-  { name: '急凍符文', type: 'material', price: 2200, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'freeze_hit', desc: '賦予裝備 "急凍的" 詞綴 (普攻 25% 附加冰凍)' },
-  { name: '狂暴符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'berserk_on_hit', desc: '賦予裝備 "狂暴的" 詞綴 (受傷時 25% 賦予自身狂暴)' },
-  { name: '快速符文', type: 'material', price: 2500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'speed_haste', desc: '賦予裝備 "快速的" 詞綴 (speed +20%)' },
-  { name: '穿甲符文', type: 'material', price: 2200, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'def_pierce', desc: '賦予裝備 "穿甲的" 詞綴 (無視目標 20% 防禦力)' },
-  { name: '連擊符文', type: 'material', price: 3000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'double_attack', desc: '賦予裝備 "連擊的" 詞綴 (普攻 15% 機率造成兩次傷害)' },
-  { name: '敲暈符文', type: 'material', price: 2000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'stun_hit', desc: '賦予裝備 "敲暈的" 詞綴 (攻擊有 10% 機率暈眩目標)' },
-  { name: '處決符文', type: 'material', price: 2800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'execute_dmg', desc: '賦予裝備 "處決的" 詞綴 (對 HP < 30% 的敵人傷害增加 30%)' },
-  { name: '先機符文', type: 'material', price: 1500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'first_strike', desc: '賦予裝備 "先機的" 詞綴 (戰鬥開始時 ATB 充能 75%)' },
-  { name: '渾身符文', type: 'material', price: 3500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'max_might', desc: '賦予裝備 "精神抖擻的" 詞綴 (自身 HP 在 95% 以上時，ATK +10%)' },
-  { name: '鐵壁符文', type: 'material', price: 1800, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'start_shield', desc: '賦予裝備 "鐵壁的" 詞綴 (戰鬥開始時獲得等同 20% HP 的護盾)' },
-  { name: '奧術符文', type: 'material', price: 2500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'skill_amp', desc: '賦予裝備 "奧術的" 詞綴 (技能傷害增加 20%)' },
-  { name: '獵鷹符文', type: 'material', price: 2500, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'falcon_blitz', desc: '賦予裝備 "愛鳥人士的" 詞綴 (普通攻擊時 50% 機率產生獵鷹追擊傷害)' },
+  { name: '猛毒符文', type: 'material', price: 18000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'poison_hit', desc: '賦予裝備 "猛毒的" 詞綴 (普攻附加中毒)' },
+  { name: '灼熱符文', type: 'material', price: 18000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'burn_hit', desc: '賦予裝備 "灼熱的" 詞綴 (普攻附加燃燒)' },
+  { name: '急凍符文', type: 'material', price: 22000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'freeze_hit', desc: '賦予裝備 "急凍的" 詞綴 (普攻 25% 附加冰凍)' },
+  { name: '狂暴符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'berserk_on_hit', desc: '賦予裝備 "狂暴的" 詞綴 (受傷時 25% 賦予自身狂暴)' },
+  { name: '快速符文', type: 'material', price: 25000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'speed_haste', desc: '賦予裝備 "快速的" 詞綴 (speed +20%)' },
+  { name: '穿甲符文', type: 'material', price: 22000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'def_pierce', desc: '賦予裝備 "穿甲的" 詞綴 (無視目標 20% 防禦力)' },
+  { name: '連擊符文', type: 'material', price: 30000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'double_attack', desc: '賦予裝備 "連擊的" 詞綴 (普攻 15% 機率造成兩次傷害)' },
+  { name: '敲暈符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'stun_hit', desc: '賦予裝備 "敲暈的" 詞綴 (攻擊有 10% 機率暈眩目標)' },
+  { name: '處決符文', type: 'material', price: 28000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'execute_dmg', desc: '賦予裝備 "處決的" 詞綴 (對 HP < 30% 的敵人傷害增加 30%)' },
+  { name: '先機符文', type: 'material', price: 15000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'first_strike', desc: '賦予裝備 "先機的" 詞綴 (戰鬥開始時 ATB 充能 75%)' },
+  { name: '渾身符文', type: 'material', price: 35000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'max_might', desc: '賦予裝備 "精神抖擻的" 詞綴 (自身 HP 在 95% 以上時，ATK +10%)' },
+  { name: '鐵壁符文', type: 'material', price: 18000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'start_shield', desc: '賦予裝備 "鐵壁的" 詞綴 (戰鬥開始時獲得等同 20% HP 的護盾)' },
+  { name: '奧術符文', type: 'material', price: 25000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'skill_amp', desc: '賦予裝備 "奧術的" 詞綴 (技能傷害增加 20%)' },
+  { name: '獵鷹符文', type: 'material', price: 25000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'falcon_blitz', desc: '賦予裝備 "愛鳥人士的" 詞綴 (普通攻擊時 50% 機率產生獵鷹追擊傷害)' },
 ];

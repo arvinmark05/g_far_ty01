@@ -13,23 +13,23 @@ export const MONSTERS: Monster[] = [
   // =================================================================
   {
     name: '史萊姆', emoji: '🟢', role: 'STANDARD', floorRange: [1, 100],
-    hp: 60, atk: 12, def: 5, speed: 25, gold: 12, exp: 20,
+    hp: 60, atk: 16, def: 5, speed: 25, gold: 12, exp: 20,
     description: '身體半透明的凝膠生物，動作緩慢。'
   },
   {
     name: '洞穴蝙蝠', emoji: '🦇', role: 'RUSHER', floorRange: [1, 100],
-    hp: 35, atk: 6, def: 2, speed: 45, gold: 15, exp: 25,
+    hp: 35, atk: 8, def: 2, speed: 45, gold: 15, exp: 25,
     description: '速度極快，在黑暗中襲擊冒險者。'
   },
   {
     name: '鐵皮哥布林', emoji: '👺', role: 'TANK', floorRange: [1, 100],
-    hp: 120, atk: 8, def: 15, speed: 20, gold: 20, exp: 30,
+    hp: 120, atk: 12, def: 15, speed: 20, gold: 20, exp: 30,
     description: '偷了鍋蓋當盾牌的哥布林，很耐打。'
   },
   // --- 亞種 ---
   {
     name: '劇毒史萊姆', emoji: '🟣', role: 'STANDARD', floorRange: [1, 100], isSubSpecies: true,
-    hp: 180, atk: 8, def: 8, speed: 50, gold: 30, exp: 45,
+    hp: 180, atk: 10, def: 8, speed: 60, gold: 30, exp: 45,
     onHitEffect: { applyStatus: 'poison', statusChance: 0.90 },
     description: '變異的紫色史萊姆，體內含有劇毒酸液。'
   },
@@ -118,18 +118,18 @@ export const MONSTERS: Monster[] = [
   // 區域 5: 黑暗荒漠 (Floor 401 - 500)
   // =================================================================
   {
-    name: '暗影惡魔', emoji: '😈', role: 'STANDARD', floorRange: [401, 500],
+    name: '夢魘', emoji: '😈', role: 'STANDARD', floorRange: [401, 500],
     hp: 2500, atk: 220, def: 180, speed: 45, gold: 400, exp: 500,
     onHitEffect: { applyStatus: 'poison', statusChance: 0.30 },
     description: '來自深淵的惡意實體化。'
   },
   {
-    name: '暗影刺客', emoji: '🥷', role: 'RUSHER', floorRange: [401, 500],
+    name: '暗影魔', emoji: '🥷', role: 'RUSHER', floorRange: [401, 500],
     hp: 1500, atk: 120, def: 50, speed: 80, gold: 450, exp: 600,
     description: '隱藏在風沙中的殺手，一擊致命。'
   },
   {
-    name: '巨型沙蟲', emoji: '🪱', role: 'TANK', floorRange: [401, 500],
+    name: '巨型蚯蚓', emoji: '🪱', role: 'TANK', floorRange: [401, 500],
     hp: 4500, atk: 180, def: 300, speed: 20, gold: 350, exp: 550,
     description: '吞噬一切的沙漠巨獸，皮厚肉粗。'
   },

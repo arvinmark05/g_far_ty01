@@ -226,6 +226,7 @@ export const STORY_SCRIPTS: StoryScript[] = [
       { speakerName: '', text: '你點了點頭。', image: '' },
       { speakerName: '莉莉', text: '太好了！那就這麼說定了！從現在起我們就是夥伴了！', image: IMG_LILY_HAPPY, emotion: 'happy' },
       { speakerName: '系統', text: '🎉 莉莉加入了隊伍！', image: '' },
+      { speakerName: '系統', text: '莉莉能夠在戰鬥中幫你投擲藥水！', image: '' },
     ],
     onFinish: (player) => ({ storyProgress: 6 }),
     setFlags: { lily_joined: true }
