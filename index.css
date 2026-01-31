@@ -1,23 +1,49 @@
 @import 'tailwindcss';
 
 /* Fantasy Adventure RPG - Main Styles */
+/* 地城魔法主題 - 深紫 + 金色 */
 
-/* 自訂滾動條 */
+:root {
+  --color-primary: #1a1025;
+  /* 深紫黑 */
+  --color-primary-light: #2d1f3d;
+  /* 淺紫 */
+  --color-secondary: #0d0a12;
+  /* 極深紫黑 */
+  --color-accent: #d4af37;
+  /* 金色 */
+  --color-accent-light: #f0d875;
+  /* 亮金 */
+  --color-gold-glow: rgba(212, 175, 55, 0.4);
+  --color-purple-glow: rgba(139, 92, 246, 0.4);
+  --color-border: rgba(212, 175, 55, 0.3);
+  --color-panel-bg: rgba(13, 10, 18, 0.85);
+}
+
+/* 全局背景深色化 */
+body {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 50%, #12091a 100%);
+  min-height: 100vh;
+}
+
+/* 自訂滾動條 - 金色主題 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.5);
+  background: rgba(13, 10, 18, 0.6);
   border-radius: 4px;
 }
 
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--color-accent) 0%, #a38829 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.7);
+  background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
 }
 
 /* 浮動文字動畫 */
@@ -234,4 +260,164 @@ button:active {
 .typing-cursor::after {
   content: '|';
   animation: typing-cursor 1s step-end infinite;
+}
+
+/* ========================================
+   地城魔法主題 - 全局UI覆蓋樣式
+   ======================================== */
+
+/* 頁面容器：深紫黑漸層 */
+.min-h-screen {
+  background: linear-gradient(135deg, #0d0a12 0%, #1a1025 40%, #12091a 100%) !important;
+}
+
+/* 主要面板樣式覆蓋：深色玻璃質感 */
+[class*="bg-black/40"],
+[class*="bg-black/60"] {
+  background: var(--color-panel-bg) !important;
+  border-color: var(--color-border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 175, 55, 0.1) !important;
+}
+
+/* 半透明深色面板 */
+[class*="backdrop-blur"] {
+  backdrop-filter: blur(12px) saturate(1.2);
+}
+
+/* 邊框統一金色調 */
+[class*="border-purple-500"],
+[class*="border-green-500"],
+[class*="border-blue-500"],
+[class*="border-yellow-500"],
+[class*="border-orange-500"],
+[class*="border-red-500"],
+[class*="border-indigo-500"],
+[class*="border-cyan-500"],
+[class*="border-teal-500"] {
+  border-color: var(--color-border) !important;
+}
+
+/* 主要互動按鈕：深紫+金色漸層 */
+button[class*="bg-gradient-to-r"] {
+  background: linear-gradient(135deg, #2d1f4d 0%, #1a1035 50%, #2a1a40 100%) !important;
+  border: 1px solid var(--color-accent) !important;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+button[class*="bg-gradient-to-r"]:hover {
+  background: linear-gradient(135deg, #3d2f5d 0%, #2a1a45 50%, #3a2a50 100%) !important;
+  border-color: var(--color-accent-light) !important;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 功能分類按鈕（購買/出售/強化等） */
+button[class*="bg-orange-600"],
+button[class*="bg-red-600"],
+button[class*="bg-blue-600"],
+button[class*="bg-purple-600"],
+button[class*="bg-green-600"] {
+  background: linear-gradient(135deg, #3a2960 0%, #2a1a45 100%) !important;
+  border: 1px solid var(--color-accent) !important;
+}
+
+button.bg-gray-800,
+[class*="bg-gray-800"] {
+  background: rgba(26, 16, 37, 0.9) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+button.bg-gray-700,
+[class*="bg-gray-700"]:not(button) {
+  background: rgba(45, 31, 61, 0.8) !important;
+}
+
+/* 標題文字：金色漸層 */
+[class*="text-purple-300"],
+[class*="text-green-300"],
+[class*="text-blue-300"],
+[class*="text-yellow-300"],
+[class*="text-orange-300"] {
+  color: var(--color-accent) !important;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* 狀態卡片背景 */
+[class*="bg-red-900/30"],
+[class*="bg-blue-900/30"],
+[class*="bg-orange-900/30"],
+[class*="bg-purple-900/30"],
+[class*="bg-cyan-900/30"],
+[class*="bg-green-900/30"] {
+  background: rgba(45, 31, 61, 0.4) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+/* 商店物品卡片 */
+[class*="bg-orange-900/40"],
+[class*="bg-blue-900/40"] {
+  background: rgba(26, 16, 37, 0.7) !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+}
+
+[class*="bg-orange-900/40"]:hover,
+[class*="bg-blue-900/40"]:hover {
+  background: rgba(45, 31, 61, 0.8) !important;
+  border-color: var(--color-accent) !important;
+}
+
+/* 裝備稀有度光暈 - 主題化 */
+.item-glow-rare {
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}
+
+.item-glow-epic {
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.7);
+}
+
+.item-glow-legendary {
+  box-shadow: 0 0 18px var(--color-gold-glow), 0 0 30px rgba(212, 175, 55, 0.3);
+}
+
+/* EXP 進度條 */
+[class*="bg-green-400"] {
+  background: linear-gradient(90deg, var(--color-accent) 0%, #a38829 100%) !important;
+  box-shadow: 0 0 8px var(--color-gold-glow) !important;
+}
+
+/* ATB 進度條 - 黃色 */
+[class*="bg-yellow-400"][class*="h-full"],
+[class*="bg-yellow-500"][class*="h-full"],
+[class*="bg-blue-400"][class*="h-full"] {
+  background: linear-gradient(90deg, #facc15 0%, #eab308 100%) !important;
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.5) !important;
+}
+
+/* HP 進度條保持紅色 */
+[class*="bg-red-600"][class*="h-full"],
+[class*="from-red-600"][class*="h-full"] {
+  background: linear-gradient(90deg, #b91c1c 0%, #dc2626 100%) !important;
+}
+
+/* 金幣與數值顯示 */
+[class*="text-yellow-400"],
+[class*="text-yellow-100"] {
+  color: var(--color-accent-light) !important;
+  text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+/* 浮動文字陰影增強 */
+.floating-text {
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9), 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* 對話框主題化 */
+[class*="bg-gradient-to-r"][class*="from-purple-700"] {
+  background: linear-gradient(135deg, #2d1f4d 0%, #1a1035 100%) !important;
+  border-color: var(--color-accent) !important;
+}
+
+/* 設置視窗 */
+[class*="bg-gray-900"] {
+  background: var(--color-primary) !important;
 }

@@ -76,10 +76,10 @@ export const STORY_SCRIPTS: StoryScript[] = [
     lines: [
       { speakerName: '', text: '走進這一層時，傳來一陣淒厲的尖叫聲——', image: '' },
       { speakerName: '???', text: '不要！放開我...嗚嗚...！', image: IMG_LILY_CRY, emotion: 'cry' },
-      { speakerName: '', text: '你看到一個矮小的身影被一群哥布林包圍...', image: '' },
+      { speakerName: '', text: '你看到一個矮小的身影被一群怪物包圍...', image: '' },
       { speakerName: '', text: '那是之前在村莊遇到的鐵匠——莉莉！她的工作服已經被撕得破破爛爛...', image: IMG_LILY_FEAR, emotion: 'fear' },
       { speakerName: '莉莉', text: '有...有人嗎！？救救我——！！', image: IMG_LILY_CRY, emotion: 'cry' },
-      { speakerName: '', text: '哥布林們發現了你，發出威嚇的叫聲！', image: '' },
+      { speakerName: '', text: '怪物們發現了你，發出威嚇的叫聲！', image: '' },
     ],
     onFinish: () => ({})
   },
@@ -480,8 +480,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth, phase) =>
       depth === 399 && phase === 'camp' && player.flags?.floor_300_cleared && !player.flags?.floor_400_cleared && !player.flags?.vampire_warning_seen,
     lines: [
-      { speakerName: '引導者', text: '呀～黑暗又色情的氣息...', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '這可是大人的時間喔♥ 小孩子不要偷看嘛～', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '呀～黑暗又邪惡的氣息...', image: IMG_GUIDE },
+      { speakerName: '引導者', text: '下面這位可是夜晚的領主喔♥', image: IMG_GUIDE, emotion: 'happy' },
     ],
     onFinish: () => ({}),
     setFlags: { vampire_warning_seen: true }

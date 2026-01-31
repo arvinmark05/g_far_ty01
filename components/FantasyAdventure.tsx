@@ -895,7 +895,8 @@ export default function FantasyAdventure() {
 
   const sellItem = (index: number) => {
     const item = inventory[index];
-    const sellPrice = Math.round(item.price / 2);
+    // 符文石固定賣 1G，其他物品 price/2
+    const sellPrice = item.materialType === 'rune_stone' ? 1 : Math.round(item.price / 2);
 
     // Handle Stacking Sell
     if (item.isMaterial && (item.quantity || 1) > 1) {
@@ -1463,6 +1464,9 @@ export default function FantasyAdventure() {
                       {item.type === 'armor' && item.desc && (
                         <div className="mt-1 text-xs text-purple-300 bg-purple-900/30 p-1 rounded inline-block">✨ {item.desc}</div>
                       )}
+                      {item.isMaterial && item.desc && (
+                        <div className="mt-1 text-xs text-cyan-300 bg-cyan-900/30 p-1 rounded inline-block">💎 {item.desc}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1846,13 +1850,18 @@ export default function FantasyAdventure() {
                 <h3 className="text-xl font-bold text-red-300 mb-3">💰 收購區</h3>
                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                   {inventory.length === 0 ? <div className="text-gray-500 text-center py-4">背包是空的</div> : inventory.map((item, index) => (
-                    <div key={index} className="bg-red-900/20 p-2 rounded-lg flex justify-between items-center border border-red-500/10">
-                      <div className="text-white text-sm">
-                        {getItemDisplayName(item)}
-                        {(item.quantity || 1) > 1 && <span className="text-yellow-400 font-bold ml-1">x{item.quantity}</span>}
-                        {getEquipmentComparison(item)}
+                    <div key={index} className="bg-red-900/20 p-2 rounded-lg flex flex-col border border-red-500/10">
+                      <div className="flex justify-between items-center">
+                        <div className="text-white text-sm">
+                          {getItemDisplayName(item)}
+                          {(item.quantity || 1) > 1 && <span className="text-yellow-400 font-bold ml-1">x{item.quantity}</span>}
+                          {getEquipmentComparison(item)}
+                        </div>
+                        <button onClick={() => sellItem(index)} className="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-white text-xs font-bold transition-all">賣出 {item.materialType === 'rune_stone' ? 1 : Math.round(item.price / 2)}G</button>
                       </div>
-                      <button onClick={() => sellItem(index)} className="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-white text-xs font-bold transition-all">賣出 {Math.round(item.price / 2)}G</button>
+                      {item.isMaterial && item.desc && (
+                        <div className="mt-1 text-xs text-cyan-300">💎 {item.desc}</div>
+                      )}
                     </div>
                   ))}
                 </div>
