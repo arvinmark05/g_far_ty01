@@ -1588,7 +1588,7 @@ export default function FantasyAdventure() {
       const weaponArt = player.weapon ? WEAPON_ARTS[player.weapon.category] : null;
 
       return (
-        <div className={`min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-gray-900 p-4 ${screenShake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}>
+        <div className={`h-[100dvh] flex flex-col bg-gradient-to-br from-red-900 via-purple-900 to-gray-900 p-3 pb-[env(safe-area-inset-bottom)] overflow-hidden ${screenShake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}>
           <style>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
@@ -1628,11 +1628,11 @@ export default function FantasyAdventure() {
             })}
           </div>
 
-          <div className="max-w-4xl mx-auto relative h-full flex flex-col">
+          <div className="max-w-4xl mx-auto relative flex-1 flex flex-col min-h-0 overflow-hidden">
 
-            <div className={`mt-8 backdrop-blur-sm rounded-xl p-6 mb-4 text-center transition-all duration-300 relative shrink-0 ${currentMonster.isBoss ? 'bg-red-950/80 border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)] scale-105' : 'bg-black/40 border border-red-500/30'} ${monsterShake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}>
+            <div className={`mt-2 backdrop-blur-sm rounded-xl p-3 mb-2 text-center transition-all duration-300 relative shrink-0 ${currentMonster.isBoss ? 'bg-red-950/80 border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)] scale-105' : 'bg-black/40 border border-red-500/30'} ${monsterShake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}>
               <div className={`absolute inset-0 bg-white mix-blend-overlay transition-opacity duration-100 rounded-xl pointer-events-none ${hitFlash ? 'opacity-40' : 'opacity-0'}`}></div>
-              <div className={`text-8xl mb-2 relative ${monsterDefeated ? 'animate-[dropFade_0.6s_ease-in_forwards]' : 'animate-[bounce_3s_infinite]'}`}>{currentMonster.emoji}</div>
+              <div className={`text-6xl mb-1 relative ${monsterDefeated ? 'animate-[dropFade_0.6s_ease-in_forwards]' : 'animate-[bounce_3s_infinite]'}`}>{currentMonster.emoji}</div>
 
               <div className="max-w-md mx-auto relative z-10">
                 <div className={`text-2xl font-bold mb-1 ${currentMonster.isBoss ? 'text-red-400' : 'text-gray-200'}`}>{currentMonster.isBoss && '💀 '}{currentMonster.name}{currentMonster.isBoss && ' 💀'}</div>
@@ -1665,11 +1665,11 @@ export default function FantasyAdventure() {
               </div>
             </div>
 
-            <div ref={battleLogRef} className="h-48 bg-black/60 backdrop-blur-md rounded-lg p-2 mb-2 border-t border-b border-white/10 overflow-y-auto text-center custom-scrollbar">
-              {battleLog.map((log, i) => (<div key={i} className="text-gray-300 text-sm py-0.5">{log}</div>))}
+            <div ref={battleLogRef} className="flex-1 min-h-0 bg-black/60 backdrop-blur-md rounded-lg p-2 mb-2 border-t border-b border-white/10 overflow-y-auto text-center custom-scrollbar">
+              {battleLog.map((log, i) => (<div key={i} className="text-gray-300 text-xs py-0.5">{log}</div>))}
             </div>
 
-            <div className="bg-black/60 backdrop-blur-md rounded-lg p-3 mb-2 border border-white/10 shrink-0">
+            <div className="bg-black/60 backdrop-blur-md rounded-lg p-2 mb-2 border border-white/10 shrink-0">
               <div className="flex justify-between items-center mb-1">
                 <div className="flex flex-col">
                   <div className="text-white font-bold text-lg flex items-center gap-2">
@@ -1723,8 +1723,8 @@ export default function FantasyAdventure() {
               </div>
             </div>
 
-            <div className="mt-auto bg-gray-900/80 backdrop-blur-md rounded-t-2xl p-4 border-t-2 border-blue-500/50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] shrink-0">
-              <div className="grid grid-cols-4 gap-2 h-16">
+            <div className="bg-gray-900/80 backdrop-blur-md rounded-t-2xl p-3 border-t-2 border-blue-500/50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] shrink-0">
+              <div className="grid grid-cols-4 gap-2 h-14">
                 <button onClick={performPlayerSkill} disabled={skillCooldown > 0} className={`col-span-1 rounded-lg flex flex-col items-center justify-center border transition-all relative overflow-hidden ${skillCooldown <= 0 ? 'bg-blue-600 hover:bg-blue-500 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed'}`}>
                   <Zap size={20} className={skillCooldown > 0 ? 'text-gray-500' : 'text-yellow-300'} />
                   <span className="text-[10px] sm:text-xs font-bold mt-1 line-clamp-1">{activeSkill ? activeSkill.name : '技能'}</span>
