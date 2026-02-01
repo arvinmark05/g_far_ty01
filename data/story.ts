@@ -3,12 +3,13 @@ import { StoryScript, GameFlags } from '../types';
 
 // 圖片路徑 - 使用 BASE_URL 確保 GitHub Pages 部署後路徑正確
 const BASE = import.meta.env.BASE_URL;
-const IMG_GUIDE = `${BASE}img/smith_01.png`; // 女神 (暫用)
-const IMG_LILY_NORMAL = `${BASE}img/smith_01.png`;
-const IMG_LILY_HAPPY = `${BASE}img/smith_01.png`;
-const IMG_LILY_FEAR = `${BASE}img/smith_01.png`;
-const IMG_LILY_CRY = `${BASE}img/smith_01.png`;
-const IMG_LILY_LEWD = `${BASE}img/smith_01.png`;
+const IMG_GUIDE_NORMAL = `${BASE}img/GUIDE_NORMAL.png`;
+const IMG_GUIDE_HEART = `${BASE}img/GUIDE_HEART.png`;
+const IMG_LILY_NORMAL = `${BASE}img/LILY_NORMAL.png`;
+const IMG_LILY_HAPPY = `${BASE}img/LILY_HAPPY.png`;
+const IMG_LILY_FEAR = `${BASE}img/LILY_FEAR.png`;
+const IMG_LILY_CRY = `${BASE}img/LILY_CRY.png`;
+const IMG_LILY_LEWD = `${BASE}img/LILY_LEWD.png`;
 
 // ============================================
 // 故事腳本定義
@@ -25,12 +26,12 @@ export const STORY_SCRIPTS: StoryScript[] = [
     priority: 1000, // 最高優先級
     condition: (player, gameState) => player.storyProgress === 0 && gameState === 'village',
     lines: [
-      { speakerName: '???', text: '喂喂～能聽到嗎，雜魚？', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '啊哈♪ 終於有反應了。歡迎來到這個世界，小廢物～', image: IMG_GUIDE, emotion: 'happy' },
-      { speakerName: '引導者', text: '我是負責引導像你這種菜鳥的女神大人喔♥ 感恩戴德吧！', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '嘖嘖嘖...看這副弱雞樣...真的能活著走出地下城嗎？', image: IMG_GUIDE, emotion: 'happy' },
-      { speakerName: '引導者', text: '算了，反正死掉也是一種娛樂嘛～那麼，你這個雜魚叫什麼名字？', image: IMG_GUIDE, showNameInput: true },
-      { speakerName: '引導者', text: '哼～記住了。那就去地下城送死吧，我會在這裡看好戲的♪', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '???', text: '喂喂～能聽到嗎，雜魚？', image: IMG_GUIDE_NORMAL },
+      { speakerName: '引導者', text: '啊哈♪ 終於有反應了。歡迎來到這個世界，小廢物～', image: IMG_GUIDE_NORMAL, emotion: 'happy' },
+      { speakerName: '引導者', text: '我是負責引導像你這種菜鳥的女神大人喔♥ 感恩戴德吧！', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '嘖嘖嘖...看這副弱雞樣...真的能活著走出地下城嗎？', image: IMG_GUIDE_NORMAL, emotion: 'happy' },
+      { speakerName: '引導者', text: '算了，反正死掉也是一種娛樂嘛～那麼，你這個雜魚叫什麼名字？', image: IMG_GUIDE_NORMAL, showNameInput: true },
+      { speakerName: '引導者', text: '哼～記住了。那就去地下城送死吧，我會在這裡看好戲的♪', image: IMG_GUIDE_HEART, emotion: 'happy' },
     ],
     onFinish: (player) => ({ storyProgress: 1 }),
     setFlags: { intro_seen: true }
@@ -60,10 +61,10 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth) =>
       player.storyProgress === 2 && gameState === 'village' && maxDepth >= 10,
     lines: [
-      { speakerName: '引導者', text: '哎呀？居然還活著？', image: IMG_GUIDE, emotion: 'surprise' },
-      { speakerName: '引導者', text: '我還以為你會在第三層就變成怪物的點心呢～', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '看來稍微有點骨氣嘛...那就多掙扎一下讓我開心吧♥', image: IMG_GUIDE, emotion: 'happy' },
-      { speakerName: '引導者', text: '繼續往下走的話，會遇到更刺激的事情喔...嘻嘻', image: IMG_GUIDE },
+      { speakerName: '引導者', text: '哎呀？居然還活著？', image: IMG_GUIDE_HEART, emotion: 'surprise' },
+      { speakerName: '引導者', text: '我還以為你會在第三層就變成怪物的點心呢～', image: IMG_GUIDE_NORMAL },
+      { speakerName: '引導者', text: '看來稍微有點骨氣嘛...那就多掙扎一下讓我開心吧♥', image: IMG_GUIDE_NORMAL, emotion: 'happy' },
+      { speakerName: '引導者', text: '繼續往下走的話，會遇到更刺激的事情喔...嘻嘻', image: IMG_GUIDE_HEART },
     ],
     onFinish: (player) => ({ storyProgress: 3, gold: player.gold + 200 })
   },
@@ -204,8 +205,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
     lines: [
       { speakerName: '', text: '在營地附近，你發現了一個沉甸甸的背包...', image: '' },
       { speakerName: '', text: '這一定就是莉莉說的鐵匠背包！裡面都是鍛造工具，難怪這麼重...', image: '' },
-      { speakerName: '引導者', text: '哦～找到了那個大胸矮人的東西嗎？', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '真是個好人呢...或者說...是想要報酬吧？嘻嘻♪', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '哦～找到了那個大胸矮人的東西嗎？', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '真是個好人呢...或者說...是想要報酬吧？嘻嘻♪', image: IMG_GUIDE_HEART, emotion: 'happy' },
     ],
     onFinish: () => ({}),
     setFlags: { backpack_found: true }
@@ -239,9 +240,9 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth, phase) =>
       depth === 99 && phase === 'camp' && player.flags?.lily_joined && !player.flags?.floor_100_cleared && !player.flags?.troll_warning_seen,
     lines: [
-      { speakerName: '引導者', text: '呀呵～終於要到第 100 層了呢', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '下一層那傢伙很大喔...非常的大♥', image: IMG_GUIDE, emotion: 'happy' },
-      { speakerName: '引導者', text: '你那個矮人妹子...會不會被玩壞呢～？好期待啊♪', image: IMG_GUIDE },
+      { speakerName: '引導者', text: '呀呵～終於要到第 100 層了呢', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '下一層那傢伙很大喔...非常的大♥', image: IMG_GUIDE_HEART, emotion: 'happy' },
+      { speakerName: '引導者', text: '你那個矮人妹子...會不會被玩壞呢～？好期待啊♪', image: IMG_GUIDE_HEART },
     ],
     onFinish: () => ({}),
     setFlags: { troll_warning_seen: true }
@@ -320,8 +321,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth, phase) =>
       depth === 199 && phase === 'camp' && player.flags?.floor_100_cleared && !player.flags?.floor_200_cleared && !player.flags?.necro_warning_seen,
     lines: [
-      { speakerName: '引導者', text: '死亡的氣息好重～', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '下一層是死靈法師的領域喔...小心別嚇尿了？嘻嘻♪', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '死亡的氣息好重～', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '下一層是死靈法師的領域喔...小心別嚇尿了？嘻嘻♪', image: IMG_GUIDE_NORMAL, emotion: 'happy' },
     ],
     onFinish: () => ({}),
     setFlags: { necro_warning_seen: true }
@@ -390,8 +391,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
     lines: [
       { speakerName: '', text: '莉莉拿出她的鐵鎚，無視危險地到處敲打牆壁...', image: '' },
       { speakerName: '莉莉', text: '叮叮叮～♪ 這裡有礦... 這邊也有...哼哼♪', image: IMG_LILY_HAPPY, emotion: 'happy' },
-      { speakerName: '引導者', text: '...看吧，給她找個礦就完全變一個人了呢', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '根本不像剛才那個又哭又叫的廢物嘛～', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '...看吧，給她找個礦就完全變一個人了呢', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '根本不像剛才那個又哭又叫的廢物嘛～', image: IMG_GUIDE_HEART, emotion: 'happy' },
       { speakerName: '莉莉', text: '不要打擾我挖礦！！', image: IMG_LILY_NORMAL, emotion: 'angry' },
     ],
     onFinish: () => ({})
@@ -403,8 +404,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth, phase) =>
       depth === 299 && phase === 'camp' && player.flags?.floor_200_cleared && !player.flags?.floor_300_cleared && !player.flags?.golem_warning_seen,
     lines: [
-      { speakerName: '引導者', text: '古老的氣息...感覺很硬呢', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '岩石巨像...這次換你們被砸扁嗎？嘻嘻', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '古老的氣息...感覺很硬呢', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '岩石巨像...這次換你們被砸扁嗎？嘻嘻', image: IMG_GUIDE_HEART, emotion: 'happy' },
     ],
     onFinish: () => ({}),
     setFlags: { golem_warning_seen: true }
@@ -468,7 +469,7 @@ export const STORY_SCRIPTS: StoryScript[] = [
       { speakerName: '莉莉', text: '看！我找到了這麼多符文石！', image: IMG_LILY_HAPPY, emotion: 'happy' },
       { speakerName: '', text: '莉莉得意地展示她搜刮來的戰利品...', image: '' },
       { speakerName: '莉莉', text: '這些每個都價值連城！等我們回去以後就發財了！', image: IMG_LILY_HAPPY, emotion: 'happy' },
-      { speakerName: '引導者', text: '...真是個貪財的小矮人呢', image: IMG_GUIDE },
+      { speakerName: '引導者', text: '...真是個貪財的小矮人呢', image: IMG_GUIDE_HEART },
       { speakerName: '莉莉', text: '這叫商業頭腦！我是商人！', image: IMG_LILY_NORMAL, emotion: 'angry' },
     ],
     onFinish: () => ({})
@@ -480,8 +481,8 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth, phase) =>
       depth === 399 && phase === 'camp' && player.flags?.floor_300_cleared && !player.flags?.floor_400_cleared && !player.flags?.vampire_warning_seen,
     lines: [
-      { speakerName: '引導者', text: '呀～黑暗又邪惡的氣息...', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '下面這位可是夜晚的領主喔♥', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '呀～黑暗又邪惡的氣息...', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '下面這位可是夜晚的領主喔♥', image: IMG_GUIDE_HEART, emotion: 'happy' },
     ],
     onFinish: () => ({}),
     setFlags: { vampire_warning_seen: true }
@@ -566,9 +567,9 @@ export const STORY_SCRIPTS: StoryScript[] = [
     condition: (player, gameState, depth, maxDepth, phase) =>
       depth === 499 && phase === 'camp' && player.flags?.floor_400_cleared && !player.flags?.floor_500_cleared && !player.flags?.final_warning_seen,
     lines: [
-      { speakerName: '引導者', text: '終於到了呢...最後的深淵', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '這一路走來...說實話，我都覺得有點驚訝', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '別死了喔，雜魚。...不，現在已經不是雜魚了呢', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '終於到了呢...最後的深淵', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '這一路走來...說實話，我都覺得有點驚訝', image: IMG_GUIDE_NORMAL },
+      { speakerName: '引導者', text: '別死了喔，雜魚。...不，現在已經不是雜魚了呢', image: IMG_GUIDE_HEART, emotion: 'happy' },
     ],
     onFinish: () => ({}),
     setFlags: { final_warning_seen: true }
@@ -599,10 +600,10 @@ export const STORY_SCRIPTS: StoryScript[] = [
       { speakerName: '莉莉', text: '嗚嗚...終於...終於找到了...！', image: IMG_LILY_CRY, emotion: 'happy' },
       { speakerName: '', text: '莉莉喜極而泣，緊緊抱住了你。', image: IMG_LILY_CRY, emotion: 'happy' },
       { speakerName: '莉莉', text: '謝謝你...真的謝謝你...沒有你的話...', image: IMG_LILY_CRY, emotion: 'cry' },
-      { speakerName: '引導者', text: '...呀呵，恭喜恭喜♪', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '沒想到真的能做到呢...這次的勇者稍微有點骨氣呢', image: IMG_GUIDE },
-      { speakerName: '引導者', text: '那麼...作為獎勵，我就把「無盡模式」開放給你吧', image: IMG_GUIDE, emotion: 'happy' },
-      { speakerName: '引導者', text: '你可以繼續探索更深的地方...或者和那個矮人妹子做點什麼也行♥', image: IMG_GUIDE, emotion: 'happy' },
+      { speakerName: '引導者', text: '...呀呵，恭喜恭喜♪', image: IMG_GUIDE_HEART },
+      { speakerName: '引導者', text: '沒想到真的能做到呢...這次的勇者稍微有點骨氣呢', image: IMG_GUIDE_NORMAL },
+      { speakerName: '引導者', text: '那麼...作為獎勵，我就把「無盡模式」開放給你吧', image: IMG_GUIDE_NORMAL, emotion: 'happy' },
+      { speakerName: '引導者', text: '你可以繼續探索更深的地方...或者和那個矮人妹子做點什麼也行♥', image: IMG_GUIDE_HEART, emotion: 'happy' },
       { speakerName: '系統', text: '🎊 恭喜通關！無盡模式已解鎖！', image: '' },
       { speakerName: '系統', text: '傳送回村莊中...', image: '' },
     ],

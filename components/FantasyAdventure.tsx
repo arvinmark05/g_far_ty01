@@ -15,6 +15,12 @@ import { FloatingText, StatusEffect, BuffEffect, Item, StoryScript, GameFlags } 
 import { StoryHandler } from '../utils/StoryHandler';
 import DialogueOverlay from './DialogueOverlay';
 
+// ═══════════════════════════════════════════════════════════════
+// 開發者模式開關 (0 = Player模式, 1 = 開發者模式)
+// Player模式: 不顯示開發者功能、商店不販售>10001G的裝備、營地不顯示商店按鈕
+// ═══════════════════════════════════════════════════════════════
+const DEV_MODE: number = 0;
+
 // Helper: 計算藥水上限
 const getMaxPotions = (player: any): number => {
   if (!player?.flags?.lily_joined) return 0; // lily 未加入前無法使用藥水
@@ -1049,66 +1055,68 @@ export default function FantasyAdventure() {
             </div>
 
             {/* === DEV TOOLS SECTION START (可移除區塊) === */}
-            <div className="mt-6 pt-4 border-t border-red-500/30">
-              <h3 className="text-sm font-bold text-red-400 mb-3 flex items-center gap-2">🛠️ 開發者測試工具</h3>
-              <div className="space-y-3">
-                {/* Level Up */}
-                <button
-                  onClick={() => {
-                    if (!player) return;
-                    const newLevel = player.level + 5;
-                    setPlayer((prev: any) => ({
-                      ...prev,
-                      level: newLevel,
-                      baseMaxHp: prev.baseMaxHp + 100,
-                      statPoints: prev.statPoints + 5,
-                    }));
-                  }}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 p-2 rounded-lg text-white font-bold text-sm transition-all"
-                >
-                  ⬆️ 提升等級 (+5 Lv)
-                </button>
-                {/* Add Gold */}
-                <button
-                  onClick={() => {
-                    if (!player) return;
-                    setPlayer((prev: any) => ({ ...prev, gold: prev.gold + 10000 }));
-                  }}
-                  className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 p-2 rounded-lg text-white font-bold text-sm transition-all"
-                >
-                  💰 獲得大量金錢 (+10000)
-                </button>
-                {/* Custom Start Floor */}
-                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
-                  <div className="text-xs text-gray-400 mb-2">設定探索起始樓層</div>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      value={devStartFloor}
-                      onChange={(e) => setDevStartFloor(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="flex-1 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-purple-500 focus:outline-none"
-                      placeholder="樓層"
-                    />
-                    <button
-                      onClick={() => {
-                        if (!player) return;
-                        const targetDepth = Math.max(1, devStartFloor);
-                        setDepth(targetDepth - 1);
-                        setLastCampDepth(targetDepth);
-                        if (targetDepth > maxDepth) setMaxDepth(targetDepth);
-                        encounterMonster(targetDepth - 1);
-                        setShowSettings(false);
-                      }}
-                      className="bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded text-white font-bold text-sm transition-all"
-                    >
-                      出發
-                    </button>
+            {DEV_MODE === 1 && (
+              <div className="mt-6 pt-4 border-t border-red-500/30">
+                <h3 className="text-sm font-bold text-red-400 mb-3 flex items-center gap-2">🛠️ 開發者測試工具</h3>
+                <div className="space-y-3">
+                  {/* Level Up */}
+                  <button
+                    onClick={() => {
+                      if (!player) return;
+                      const newLevel = player.level + 5;
+                      setPlayer((prev: any) => ({
+                        ...prev,
+                        level: newLevel,
+                        baseMaxHp: prev.baseMaxHp + 100,
+                        statPoints: prev.statPoints + 5,
+                      }));
+                    }}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 p-2 rounded-lg text-white font-bold text-sm transition-all"
+                  >
+                    ⬆️ 提升等級 (+5 Lv)
+                  </button>
+                  {/* Add Gold */}
+                  <button
+                    onClick={() => {
+                      if (!player) return;
+                      setPlayer((prev: any) => ({ ...prev, gold: prev.gold + 10000 }));
+                    }}
+                    className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 p-2 rounded-lg text-white font-bold text-sm transition-all"
+                  >
+                    💰 獲得大量金錢 (+10000)
+                  </button>
+                  {/* Custom Start Floor */}
+                  <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
+                    <div className="text-xs text-gray-400 mb-2">設定探索起始樓層</div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={devStartFloor}
+                        onChange={(e) => setDevStartFloor(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="flex-1 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-purple-500 focus:outline-none"
+                        placeholder="樓層"
+                      />
+                      <button
+                        onClick={() => {
+                          if (!player) return;
+                          const targetDepth = Math.max(1, devStartFloor);
+                          setDepth(targetDepth - 1);
+                          setLastCampDepth(targetDepth);
+                          if (targetDepth > maxDepth) setMaxDepth(targetDepth);
+                          encounterMonster(targetDepth - 1);
+                          setShowSettings(false);
+                        }}
+                        className="bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded text-white font-bold text-sm transition-all"
+                      >
+                        出發
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-1">將直接開始該樓層戰鬥，並設為營地深度</div>
                   </div>
-                  <div className="text-[10px] text-gray-500 mt-1">將直接開始該樓層戰鬥，並設為營地深度</div>
                 </div>
               </div>
-            </div>
+            )}
             {/* === DEV TOOLS SECTION END === */}
           </div>
         </div>
@@ -1565,7 +1573,7 @@ export default function FantasyAdventure() {
               </button>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button onClick={() => { setPreviousState('camp'); setGameState('stats'); }} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 p-4 rounded-xl transition-all font-bold text-white border border-indigo-400/50">📊 素質配點</button>
-                <button onClick={() => { setPreviousState('camp'); setGameState('shop'); }} className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 p-4 rounded-xl transition-all font-bold text-white border border-yellow-400/50">🏪 開啟商店</button>
+                {DEV_MODE === 1 && <button onClick={() => { setPreviousState('camp'); setGameState('shop'); }} className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 p-4 rounded-xl transition-all font-bold text-white border border-yellow-400/50">🏪 開啟商店</button>}
                 <button onClick={returnToVillage} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 p-4 rounded-xl transition-all font-bold text-white border border-blue-400/50">🏘️ 回到村莊</button>
               </div>
             </div>
@@ -1813,7 +1821,7 @@ export default function FantasyAdventure() {
                 <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4 border border-orange-500/30">
                   <h3 className="text-xl font-bold text-orange-300 mb-3 sticky top-0 bg-black/80 p-2 rounded z-10">⚔️ 強力武裝</h3>
                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {EQUIPMENT.weapons.map((weapon, i) => (
+                    {EQUIPMENT.weapons.filter(w => DEV_MODE === 1 || w.price <= 10001).map((weapon, i) => (
                       <button key={i} onClick={() => buyEquipment('weapon', weapon)} disabled={player.gold < weapon.price} className={`w-full p-3 rounded-lg text-left transition-all border relative overflow-hidden ${player.gold >= weapon.price ? 'bg-orange-900/40 hover:bg-orange-800/60 border-orange-500/50' : 'bg-gray-800/40 border-gray-700/50 opacity-60'}`}>
                         <div className="flex justify-between items-start mb-1 relative z-10"><div><div className="font-bold text-white flex items-center">{weapon.name}{getEquipmentComparison({ ...weapon, type: 'weapon' })}</div><div className="text-sm text-orange-200">攻擊 +{weapon.atk}</div></div><div className="text-yellow-300 font-bold">{weapon.price}G</div></div>
                         {weapon.skill ? (<div className="text-xs text-purple-300 mt-1 bg-purple-900/30 p-1.5 rounded inline-block mr-1">⚡ {weapon.skill.desc}</div>) : weapon.desc && (<div className="text-xs text-gray-300 mt-1 bg-gray-700/50 p-1.5 rounded inline-block mr-1">📜 {weapon.desc}</div>)}
@@ -1826,7 +1834,7 @@ export default function FantasyAdventure() {
                 <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4 border border-blue-500/30">
                   <h3 className="text-xl font-bold text-blue-300 mb-3 sticky top-0 bg-black/80 p-2 rounded z-10">🛡️ 防具護甲</h3>
                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {EQUIPMENT.armor.map((armor, i) => (
+                    {EQUIPMENT.armor.filter(a => DEV_MODE === 1 || a.price <= 10001).map((armor, i) => (
                       <button key={i} onClick={() => buyEquipment('armor', armor)} disabled={player.gold < armor.price} className={`w-full p-3 rounded-lg text-left transition-all border ${player.gold >= armor.price ? 'bg-blue-900/40 hover:bg-blue-800/60 border-blue-500/50' : 'bg-gray-800/40 border-gray-700/50 opacity-60'}`}>
                         <div className="flex justify-between items-center">
                           <div>
