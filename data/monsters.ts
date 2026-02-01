@@ -13,23 +13,23 @@ export const MONSTERS: Monster[] = [
   // =================================================================
   {
     name: '史萊姆', emoji: '🟢', role: 'STANDARD', floorRange: [1, 100],
-    hp: 60, atk: 16, def: 5, speed: 25, gold: 12, exp: 20,
+    hp: 78, atk: 21, def: 7, speed: 25, gold: 12, exp: 20,
     description: '身體半透明的凝膠生物，動作緩慢。'
   },
   {
     name: '洞穴蝙蝠', emoji: '🦇', role: 'RUSHER', floorRange: [1, 100],
-    hp: 35, atk: 8, def: 2, speed: 45, gold: 15, exp: 25,
+    hp: 46, atk: 10, def: 3, speed: 45, gold: 15, exp: 25,
     description: '速度極快，在黑暗中襲擊冒險者。'
   },
   {
     name: '鐵皮哥布林', emoji: '👺', role: 'TANK', floorRange: [1, 100],
-    hp: 120, atk: 12, def: 15, speed: 20, gold: 20, exp: 30,
+    hp: 156, atk: 16, def: 20, speed: 20, gold: 20, exp: 30,
     description: '偷了鍋蓋當盾牌的哥布林，很耐打。'
   },
   // --- 亞種 ---
   {
     name: '劇毒史萊姆', emoji: '🟣', role: 'STANDARD', floorRange: [1, 100], isSubSpecies: true,
-    hp: 180, atk: 10, def: 8, speed: 60, gold: 30, exp: 45,
+    hp: 234, atk: 13, def: 10, speed: 60, gold: 30, exp: 45,
     onHitEffect: { applyStatus: 'poison', statusChance: 0.90 },
     description: '變異的紫色史萊姆，體內含有劇毒酸液。'
   },

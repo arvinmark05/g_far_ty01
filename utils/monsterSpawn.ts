@@ -117,13 +117,16 @@ function scaleMonsterToFloor(monster: Monster, floor: number): Monster {
         scaleFactor = baseScale + Math.log(1 + overFloor / 100) * 1.4;
     }
 
+    // 金幣掉落調整：100層後大幅減少縮放倍率 (約為原來的 20%~30%)
+    const goldScaleAdjustment = floor > 100 ? 0.25 : 1.0;
+
     return {
         ...monster,
         hp: Math.floor(monster.hp * scaleFactor),
         maxHp: Math.floor(monster.hp * scaleFactor),
         atk: Math.floor(monster.atk * scaleFactor),
         def: Math.floor(monster.def * scaleFactor),
-        gold: Math.floor(monster.gold * scaleFactor),
+        gold: Math.floor(monster.gold * scaleFactor * goldScaleAdjustment),
         exp: Math.floor(monster.exp * scaleFactor),
         statusEffects: [],
         buffs: []

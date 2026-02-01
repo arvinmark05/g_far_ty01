@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sword, Shield, Heart, Coins, Zap, Save, Download, Upload, Skull, Flame, Sparkles, Settings, Volume2, Trophy, X, MinusCircle, Wind, Snowflake, Droplets, ZapOff, Droplet, Hammer, Gem } from 'lucide-react';
+import { Sword, Shield, Heart, Coins, Zap, Save, Download, Upload, Skull, Flame, Sparkles, Settings, Volume2, Trophy, X, MinusCircle, Wind, Snowflake, Droplets, ZapOff, Droplet, Hammer, Gem, Circle } from 'lucide-react';
 
 // --- 匯入資料模組 ---
 import { CLASSES } from '../data/classes';
@@ -56,7 +56,7 @@ export default function FantasyAdventure() {
   const [pendingNextEncounter, setPendingNextEncounter] = useState(false); // Track if we need to proceed after story
 
   // Shop State
-  const [shopTab, setShopTab] = useState<'buy' | 'sell' | 'refine' | 'enchant'>('buy');
+  const [shopTab, setShopTab] = useState<'buy' | 'sell' | 'refine' | 'enchant' | 'socket'>('buy');
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [selectedMaterialIndex, setSelectedMaterialIndex] = useState<number | null>(null);
 
@@ -725,6 +725,38 @@ export default function FantasyAdventure() {
     if (!player || !inBattle) return;
     const result = BattleHandler.calculateMonsterAttack(player, currentMonster);
     applyBattleResult(result);
+  };
+
+  // --- Socketing Function ---
+  const performSocket = () => {
+    if (selectedItemIndex === null || !inventory[selectedItemIndex]) return;
+
+    const item = inventory[selectedItemIndex];
+    if (!item.maxSlots) return;
+
+    // 計算目前總插槽數 (空洞 + 已鑲嵌符文)
+    // 假設 affixes 中只包含額外鑲嵌的符文 (排除 armorEffect.builtInAffixes)
+    const currentRunes = item.affixes?.filter((id: string) => !item.armorEffect?.builtInAffixes?.includes(id)).length || 0;
+    const currentTotalSlots = (item.slots || 0) + currentRunes;
+
+    if (currentTotalSlots >= item.maxSlots) return;
+
+    const cost = Math.round(item.price * Math.pow(2, currentTotalSlots + 1));
+
+    if (player.gold < cost) {
+      // 簡單的提示，因為在商店介面可以看得到錢
+      return;
+    }
+
+    setPlayer((prev: any) => ({ ...prev, gold: prev.gold - cost }));
+
+    const newInventory = [...inventory];
+    newInventory[selectedItemIndex] = {
+      ...item,
+      slots: (item.slots || 0) + 1
+    };
+    setInventory(newInventory);
+    setSelectedItemIndex(null); // 重置選擇
   };
 
   const usePotion = () => {
@@ -1796,7 +1828,10 @@ export default function FantasyAdventure() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-black/40 backdrop-blur-sm rounded-xl p-6 mb-4 border border-yellow-500/30 flex justify-between items-center">
               <h2 className="text-3xl font-bold text-yellow-300">🏪 冒險者商店</h2>
-              <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30"><Coins className="w-5 h-5 text-yellow-400" /><span className="text-xl font-bold text-yellow-100">{player.gold}</span></div>
+              <div className="flex items-center gap-4">
+                <button onClick={() => { setGameState(previousState); setShopTab('buy'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-bold text-sm">離開商店</button>
+                <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30"><Coins className="w-5 h-5 text-yellow-400" /><span className="text-xl font-bold text-yellow-100">{player.gold}</span></div>
+              </div>
             </div>
 
             {/* Shop Tabs */}
@@ -1812,6 +1847,16 @@ export default function FantasyAdventure() {
                   }`}
               >
                 <Hammer size={16} /> 強化 {!player.flags?.floor_100_cleared && '🔒'}
+              </button>
+              <button
+                onClick={() => player.flags?.floor_200_cleared && setShopTab('socket')}
+                disabled={!player.flags?.floor_200_cleared}
+                className={`flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 ${!player.flags?.floor_200_cleared
+                  ? 'bg-gray-800 text-gray-600 opacity-50 cursor-not-allowed'
+                  : shopTab === 'socket' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+              >
+                <Circle size={16} /> 打洞 {!player.flags?.floor_200_cleared && '🔒'}
               </button>
               <button
                 onClick={() => player.flags?.floor_200_cleared && setShopTab('enchant')}
@@ -2007,9 +2052,63 @@ export default function FantasyAdventure() {
               </div>
             )}
 
-            <div className="mt-4 text-center">
-              <button onClick={() => { setGameState(previousState); setShopTab('buy'); }} className="px-8 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-bold">離開商店</button>
-            </div>
+            {/* SOCKET TAB */}
+            {shopTab === 'socket' && (
+              <div className="grid md:grid-cols-1 gap-4">
+                <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4 border border-indigo-500/30">
+                  <h3 className="text-lg font-bold text-indigo-300 mb-2">選擇裝備進行打洞</h3>
+                  <p className="text-xs text-gray-400 mb-2">⚠️ 增加插槽上限 (Cost = 價格 * 2^(現有洞數+1))</p>
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {inventory.filter(i => !i.isMaterial && (i.maxSlots || 0) > ((i.slots || 0) + (i.affixes?.filter((id: string) => !i.armorEffect?.builtInAffixes?.includes(id)).length || 0))).map((item, idx) => {
+                      const realIndex = inventory.indexOf(item);
+                      const currentRunes = item.affixes?.filter((id: string) => !item.armorEffect?.builtInAffixes?.includes(id)).length || 0;
+                      const currentTotalSlots = (item.slots || 0) + currentRunes;
+
+                      return (
+                        <button key={realIndex} onClick={() => setSelectedItemIndex(realIndex)} className={`w-full p-2 rounded text-left border ${selectedItemIndex === realIndex ? 'bg-indigo-600 border-indigo-400' : 'bg-gray-800 border-gray-700'}`}>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-bold">{getItemDisplayName(item)}</div>
+                              <div className="text-xs text-gray-400">插槽: {currentTotalSlots} / {item.maxSlots} (空: {item.slots})</div>
+                            </div>
+                            <div className="text-indigo-200 text-sm font-bold">
+                              Max: {item.maxSlots}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {inventory.filter(i => !i.isMaterial && (i.maxSlots || 0) > ((i.slots || 0) + (i.affixes?.filter((id: string) => !i.armorEffect?.builtInAffixes?.includes(id)).length || 0))).length === 0 && <div className="text-gray-500 text-sm">沒有可打洞的裝備 (或已達最大孔數)</div>}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    {selectedItemIndex !== null && inventory[selectedItemIndex] ? (
+                      <div className="text-center">
+                        {(() => {
+                          const item = inventory[selectedItemIndex];
+                          const currentRunes = item.affixes?.filter((id: string) => !item.armorEffect?.builtInAffixes?.includes(id)).length || 0;
+                          const currentTotalSlots = (item.slots || 0) + currentRunes;
+                          const cost = Math.round(item.price * Math.pow(2, currentTotalSlots + 1));
+
+                          return (
+                            <>
+                              <div className="text-sm text-gray-300 mb-2">
+                                費用: <span className="text-yellow-400 font-bold">{cost}G</span>
+                                {player.gold < cost && <span className="text-red-500 ml-2">(金幣不足)</span>}
+                              </div>
+                              <button onClick={performSocket} disabled={player.gold < cost} className={`w-full py-2 rounded font-bold text-white ${player.gold >= cost ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-gray-600 cursor-not-allowed'}`}>
+                                確認打洞 (+1 插槽)
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : <div className="text-center text-gray-500 text-sm">請選擇裝備</div>}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="mt-4 text-center"></div>
           </div>
         </div>
       );
