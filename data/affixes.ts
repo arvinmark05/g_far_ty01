@@ -180,5 +180,39 @@ export const AFFIXES: Record<string, Affix> = {
     type: 'passive',
     passiveEffect: 'falcon_blitz',
     value: 0.5 // 50% 機率觸發獵鷹追擊
+  },
+
+  // ═══════════════════════════════════════════
+  // 狀態免疫詞綴 (Status Immunity)
+  // ═══════════════════════════════════════════
+  poison_immune: {
+    id: 'poison_immune',
+    name: '解毒的',
+    type: 'passive',
+    passiveEffect: 'poison_immune'
+  },
+  burn_immune: {
+    id: 'burn_immune',
+    name: '防火的',
+    type: 'passive',
+    passiveEffect: 'burn_immune'
+  },
+  bleed_immune: {
+    id: 'bleed_immune',
+    name: '止血的',
+    type: 'passive',
+    passiveEffect: 'bleed_immune'
+  },
+  frozen_immune: {
+    id: 'frozen_immune',
+    name: '抗寒的',
+    type: 'passive',
+    passiveEffect: 'frozen_immune'
+  },
+  stun_immune: {
+    id: 'stun_immune',
+    name: '堅定的',
+    type: 'passive',
+    passiveEffect: 'stun_immune'
   }
 };

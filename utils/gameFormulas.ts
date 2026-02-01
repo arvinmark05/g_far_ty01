@@ -375,7 +375,7 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
         { item: EQUIPMENT.armor[3], rate: 0.05 },    // 板甲
         { item: EQUIPMENT.armor[10], rate: 0.04 },   // 騎士鎧甲
     ],
-    '炸藥哥布林': [
+    '熔岩精靈': [
         { item: EQUIPMENT.weapons[10], rate: 0.05 }, // 銳利匕首
         { item: EQUIPMENT.weapons[15], rate: 0.04 }, // 精靈弓
         { item: EQUIPMENT.armor[7], rate: 0.05 },    // 獵人皮衣
@@ -485,11 +485,11 @@ const MONSTER_DROP_TABLE: Record<string, Array<{ item: any, rate: number }>> = {
 
 // 根據怪物名稱查找對應區域 (用於計算通用掉落率調整)
 const getMonsterRegion = (monsterName: string): number => {
-    const region1 = ['史萊姆', '洞穴蝙蝠', '鐵皮哥布林', '劇毒史萊姆', '巨魔領主'];
-    const region2 = ['骷髏兵', '狂暴野狼', '殭屍蘑菇', '寒霜座狼', '死靈法師'];
-    const region3 = ['獸人戰士', '炸藥哥布林', '岩石巨像', '熔岩巨像', '遠古巨龍'];
-    const region4 = ['遺跡守衛', '詛咒魔導書', '寶箱怪', '超載守衛', '吸血伯爵'];
-    const region5 = ['夢魘', '暗影魔', '巨型蚯蚓', '虛空夢魘', '暗影魔王'];
+    const region1 = ['史萊姆', '洞穴蝙蝠', '鐵皮哥布林', '劇毒史萊姆', '巨魔領主', '骨刃戰士', '暴食史萊姆王', '陰影刺客'];
+    const region2 = ['骷髏兵', '狂暴野狼', '殭屍蘑菇', '寒霜座狼', '死靈法師', '腐化樹人', '狼人獵手', '亡靈騎兵'];
+    const region3 = ['獸人戰士', '熔岩精靈', '岩石巨像', '熔岩巨像', '遠古巨龍', '炸藥哥布林', '礦工亡魂', '結晶巨人'];
+    const region4 = ['遺跡守衛', '詛咒魔導書', '寶箱怪', '超載守衛', '吸血伯爵', '失控傀儡', '時空裂隙', '護殿石像'];
+    const region5 = ['夢魘', '暗影魔', '巨型蚯蚓', '虛空夢魘', '暗影魔王', '沙漠狩獵者', '沙暴元素', '死亡騎士'];
 
     if (region1.includes(monsterName)) return 1;
     if (region2.includes(monsterName)) return 2;
@@ -510,13 +510,34 @@ export const getMonsterDrops = (monsterName: string): Array<{ item: Item, rate: 
     // 通用素材掉落 (根據區域調整機率)
     const region = getMonsterRegion(monsterName);
 
-    // 強化石基礎 5%，每區域 +2%
-    const refineStoneRate = 0.05 + (region - 1) * 0.02;
+    // 檢查是否為菁英怪物 (名稱匹配)
+    const eliteNames = [
+        '骨刃戰士', '暴食史萊姆王', '陰影刺客',
+        '腐化樹人', '狼人獵手', '亡靈騎兵',
+        '炸藥哥布林', '礦工亡魂', '結晶巨人',
+        '失控傀儡', '時空裂隙', '護殿石像',
+        '沙漠狩獵者', '沙暴元素', '死亡騎士'
+    ];
+    const isElite = eliteNames.includes(monsterName);
+
+    // 強化石基礎 5%，每區域 +2%，菁英怪物 x2
+    const refineStoneRate = (0.05 + (region - 1) * 0.02) * (isElite ? 2 : 1);
     drops.push({ item: { ...MATERIALS[0] }, rate: refineStoneRate });
 
-    // 隨機符文石基礎 2%，每區域 +1.5%
-    const runeRate = 0.02 + (region - 1) * 0.015;
-    const randomRune = MATERIALS[Math.floor(Math.random() * (MATERIALS.length - 1)) + 1];
+    // 隨機符文石基礎 2%，每區域 +1.5%，菁英怪物 x3 且偏好高級符文
+    const runeBaseRate = 0.02 + (region - 1) * 0.015;
+    const runeRate = runeBaseRate * (isElite ? 3 : 1);
+
+    // 菁英怪物偏好高級符文 (index 5+: 吸血/放血/致命/殘暴/尖刺/靈巧...)
+    let randomRune;
+    if (isElite && Math.random() < 0.6) {
+        // 60% 機率高級符文
+        const highTierRunes = MATERIALS.slice(5); // 從吸血符文開始的高級符文
+        randomRune = highTierRunes[Math.floor(Math.random() * highTierRunes.length)];
+    } else {
+        // 普通符文池
+        randomRune = MATERIALS[Math.floor(Math.random() * (MATERIALS.length - 1)) + 1];
+    }
     drops.push({ item: { ...randomRune }, rate: runeRate });
 
     return drops;

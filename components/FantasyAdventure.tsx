@@ -579,6 +579,10 @@ export default function FantasyAdventure() {
   };
 
   const startExploration = (fromCamp = false) => {
+    // 進入地下城時補滿藥水
+    const maxPotions = getMaxPotions(player);
+    setPlayer((prev: any) => ({ ...prev, potions: maxPotions }));
+
     if (fromCamp) {
       setDepth(lastCampDepth);
     } else {
@@ -677,11 +681,15 @@ export default function FantasyAdventure() {
       setBattleLog(prev => [...prev, `${regionEmoji} ${regionName} - 深度 ${newDepth}${subSpeciesTag}`, `你遭遇了 ${monster.emoji} ${monster.name}！`]);
     }
 
-    // Check for before_battle story trigger
-    const beforeBattleScript = StoryHandler.checkTriggers(player, 'battle', newDepth, maxDepth, 'before_battle');
-    if (beforeBattleScript) {
-      setCurrentScript(beforeBattleScript);
-    }
+    // Check for before_battle story trigger - 使用 setPlayer 回調獲取最新狀態
+    setPlayer((prev: any) => {
+      const beforeBattleScript = StoryHandler.checkTriggers(prev, 'battle', newDepth, maxDepth, 'before_battle');
+      if (beforeBattleScript) {
+        // 延遲設定 script，避免在 setPlayer 回調中直接呼叫其他 setState
+        setTimeout(() => setCurrentScript(beforeBattleScript), 0);
+      }
+      return prev; // 不修改 player，只是讀取最新狀態
+    });
 
     setInBattle(true);
     setGameState('battle');
@@ -848,6 +856,20 @@ export default function FantasyAdventure() {
         setCurrentScript(afterBattleScript);
         setPendingNextEncounter(true); // Mark that we need to proceed after story
         return;
+      }
+
+      // === 每100層BOSS擊敗後補滿HP、護盾、藥水 ===
+      if (currentMonster.isBoss && isBossFloor(depth)) {
+        const stats = calculateStats(player);
+        const maxPotions = getMaxPotions(player);
+        setPlayer((prev: any) => ({
+          ...prev,
+          hp: stats.maxHp,
+          shield: stats.maxShield,
+          potions: maxPotions,
+          statusEffects: []
+        }));
+        setBattleLog(prev => [...prev, `✨ BOSS擊敗！獲得了安心的休息時間！HP、護盾、藥水已補滿！`]);
       }
 
       setCurrentMonster(null);

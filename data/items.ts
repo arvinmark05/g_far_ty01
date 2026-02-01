@@ -57,16 +57,16 @@ export const EQUIPMENT: { weapons: Item[], armor: Item[] } = {
 
 export const MATERIALS: Item[] = [
   { name: '強化石', type: 'material', price: 1000, isMaterial: true, materialType: 'refine_stone', desc: '用於強化裝備 (+1~+9)' },
-  { name: '力量符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'str_boost', desc: '賦予裝備 "力量的" 詞綴 (+10 STR)' },
-  { name: '迅捷符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'agi_boost', desc: '賦予裝備 "迅捷的" 詞綴 (+10 AGI)' },
-  { name: '堅韌符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'vit_boost', desc: '賦予裝備 "堅韌的" 詞綴 (+10 VIT)' },
-  { name: '智慧符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'int_boost', desc: '賦予裝備 "智慧的" 詞綴 (+10 INT)' },
+  { name: '力量符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'str_boost', desc: '賦予裝備 "力量的" 詞綴 (+20 STR)' },
+  { name: '迅捷符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'agi_boost', desc: '賦予裝備 "迅捷的" 詞綴 (+20 AGI)' },
+  { name: '堅韌符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'vit_boost', desc: '賦予裝備 "堅韌的" 詞綴 (+20 VIT)' },
+  { name: '智慧符文', type: 'material', price: 5000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'int_boost', desc: '賦予裝備 "智慧的" 詞綴 (+20 INT)' },
   { name: '吸血符文', type: 'material', price: 15000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'life_steal', desc: '賦予裝備 "吸血的" 詞綴 (普攻吸血 10%)' },
   { name: '放血符文', type: 'material', price: 15000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'bleed_hit', desc: '賦予裝備 "放血的" 詞綴 (普攻附加流血)' },
   { name: '致命符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'deadly', desc: '賦予裝備 "致命的" 詞綴 (+15% 暴擊率)' },
   { name: '殘暴符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'savage', desc: '賦予裝備 "殘暴的" 詞綴 (+50% 暴擊傷害)' },
-  { name: '尖刺符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'spiked', desc: '賦予裝備 "尖刺的" 詞綴 (反彈 20% 傷害)' },
-  { name: '靈巧符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'elusive', desc: '賦予裝備 "靈巧的" 詞綴 (+10% 閃避率)' },
+  { name: '尖刺符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'spiked', desc: '賦予裝備 "尖刺的" 詞綴 (反彈 30% 傷害)' },
+  { name: '靈巧符文', type: 'material', price: 20000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'elusive', desc: '賦予裝備 "靈巧的" 詞綴 (+15% 閃避率)' },
 
   // ═══════════════════════════════════════════
   // 新增的 14 種符文 (Designed by Game Producer)
@@ -85,4 +85,13 @@ export const MATERIALS: Item[] = [
   { name: '鐵壁符文', type: 'material', price: 18000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'start_shield', desc: '賦予裝備 "鐵壁的" 詞綴 (戰鬥開始時獲得等同 20% HP 的護盾)' },
   { name: '奧術符文', type: 'material', price: 25000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'skill_amp', desc: '賦予裝備 "奧術的" 詞綴 (技能傷害增加 20%)' },
   { name: '獵鷹符文', type: 'material', price: 25000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'falcon_blitz', desc: '賦予裝備 "愛鳥人士的" 詞綴 (普通攻擊時 50% 機率產生獵鷹追擊傷害)' },
+
+  // ═══════════════════════════════════════════
+  // 狀態免疫符文 (Status Immunity Runes)
+  // ═══════════════════════════════════════════
+  { name: '解毒符文', type: 'material', price: 30000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'poison_immune', desc: '賦予裝備 "解毒的" 詞綴 (免疫中毒狀態)' },
+  { name: '防火符文', type: 'material', price: 30000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'burn_immune', desc: '賦予裝備 "防火的" 詞綴 (免疫燒傷狀態)' },
+  { name: '止血符文', type: 'material', price: 30000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'bleed_immune', desc: '賦予裝備 "止血的" 詞綴 (免疫流血狀態)' },
+  { name: '抗寒符文', type: 'material', price: 30000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'frozen_immune', desc: '賦予裝備 "抗寒的" 詞綴 (免疫冰凍狀態)' },
+  { name: '堅定符文', type: 'material', price: 35000, isMaterial: true, materialType: 'rune_stone', runeAffixId: 'stun_immune', desc: '賦予裝備 "堅定的" 詞綴 (免疫暈眩狀態)' },
 ];

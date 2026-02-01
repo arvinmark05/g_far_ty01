@@ -1,13 +1,23 @@
 
 import { Monster } from '../types';
-import { MONSTERS, BOSS_MONSTERS } from '../data/monsters';
+import { MONSTERS, BOSS_MONSTERS, ELITE_MONSTERS } from '../data/monsters';
+
+/**
+ * 判斷是否為菁英樓層 (個位數為 9，但不包含 99, 199, 299... 休息營地，且排除新手區 1-29)
+ */
+function isEliteFloor(floor: number): boolean {
+    // 1-29 為新手區，不出現菁英
+    if (floor < 30) return false;
+    const unitDigit = floor % 10;
+    const isCampFloor = floor % 100 === 99; // 99, 199, 299... 是營地
+    return unitDigit === 9 && !isCampFloor;
+}
 
 /**
  * 根據樓層生成怪物
- * 亞種出現機率：
- * - 區域前半段 (1-50%): 1%
- * - 區域中段 (51-80%): 5%
- * - 區域後段 (81-100%): 10%
+ * - BOSS 層: 固定生成 BOSS
+ * - x9 樓層 (非營地): 固定生成區域菁英
+ * - 其他樓層: 一般怪物，有機率出現亞種
  */
 export function getMonsterForFloor(floor: number): Monster {
     // 檢查是否為 BOSS 層
@@ -19,6 +29,21 @@ export function getMonsterForFloor(floor: number): Monster {
             statusEffects: [],
             buffs: []
         };
+    }
+
+    // 檢查是否為菁英層 (x9 樓層，非營地)
+    if (isEliteFloor(floor)) {
+        // 獲取此樓層可出現的菁英怪物
+        const availableElites = ELITE_MONSTERS.filter(m => {
+            if (!m.floorRange) return false;
+            return floor >= m.floorRange[0] && floor <= m.floorRange[1];
+        });
+
+        if (availableElites.length > 0) {
+            // 隨機選擇一隻菁英
+            const selectedElite = availableElites[Math.floor(Math.random() * availableElites.length)];
+            return scaleMonsterToFloor(selectedElite, floor);
+        }
     }
 
     // 獲取此樓層可出現的怪物
@@ -71,27 +96,35 @@ function selectMonster(monsters: Monster[], floor: number, rangeStart: number, r
 
 /**
  * 根據樓層縮放怪物數值
- * 每 10 層增加 10% 基礎數值
+ * - 1~100樓: 線性成長 (每10層 +8%)
+ * - 100+樓: 對數遞減成長，緩和後期壓力
+ * - 目標: 500樓約為 4 倍
  */
 function scaleMonsterToFloor(monster: Monster, floor: number): Monster {
-    // 計算縮放因子 (每 10 層 +10%)
-    const scaleFactor = 1 + Math.floor(floor / 10) * 0.10;
+    let scaleFactor: number;
 
-    // 對於區域起始樓層以上的怪物，額外縮放較少
-    const rangeStart = monster.floorRange?.[0] || 1;
-    const floorDiff = floor - rangeStart;
-    const additionalScale = 1 + (floorDiff / 100) * 0.5; // 每超過起始 100 層，再增加 50%
-
-    const finalScale = scaleFactor * additionalScale;
+    if (floor <= 100) {
+        // 早期：每10層 +8% (100樓 = 1.8x)
+        scaleFactor = 1 + Math.floor(floor / 10) * 0.08;
+    } else {
+        // 中後期：基礎1.8x + 對數成長
+        // 使用 log 函數讓成長逐漸減緩
+        // floor 100 → 1.8x, floor 500 → ~4x
+        const baseScale = 1.8;
+        const overFloor = floor - 100; // 超過100樓的部分
+        // log(1 + overFloor/100) 在 overFloor=400 時約為 1.6
+        // 1.8 + 1.6 * 1.4 ≈ 4.04
+        scaleFactor = baseScale + Math.log(1 + overFloor / 100) * 1.4;
+    }
 
     return {
         ...monster,
-        hp: Math.floor(monster.hp * finalScale),
-        maxHp: Math.floor(monster.hp * finalScale),
-        atk: Math.floor(monster.atk * finalScale),
-        def: Math.floor(monster.def * finalScale),
-        gold: Math.floor(monster.gold * finalScale),
-        exp: Math.floor(monster.exp * finalScale),
+        hp: Math.floor(monster.hp * scaleFactor),
+        maxHp: Math.floor(monster.hp * scaleFactor),
+        atk: Math.floor(monster.atk * scaleFactor),
+        def: Math.floor(monster.def * scaleFactor),
+        gold: Math.floor(monster.gold * scaleFactor),
+        exp: Math.floor(monster.exp * scaleFactor),
         statusEffects: [],
         buffs: []
     };

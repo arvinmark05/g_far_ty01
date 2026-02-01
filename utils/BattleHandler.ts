@@ -81,6 +81,21 @@ export class BattleHandler {
         return { value: totalValue, count };
     }
 
+    // 檢查玩家是否免疫特定狀態效果
+    static hasStatusImmunity(player: any, status: string): boolean {
+        const immunityMap: Record<string, string> = {
+            'poison': 'poison_immune',
+            'burn': 'burn_immune',
+            'bleed': 'bleed_immune',
+            'frozen': 'frozen_immune',
+            'stun': 'stun_immune'
+        };
+        const immuneEffect = immunityMap[status];
+        if (!immuneEffect) return false;
+        const { count } = this.getAffixStackedValue(player, immuneEffect);
+        return count > 0;
+    }
+
     // 機率類效果疊加後取得最終機率 (上限 100%)
     static getStackedChance(player: any, effectType: string): number {
         const { value } = this.getAffixStackedValue(player, effectType);
@@ -966,34 +981,77 @@ export class BattleHandler {
         if (!result.playerDied && monster.onHitEffect) {
             const effect = monster.onHitEffect;
 
-            // 對玩家施加狀態異常
-            if (effect.applyStatus && Math.random() < (effect.statusChance || 0)) {
-                const currentEffects = result.playerUpdates?.statusEffects || player.statusEffects || [];
-                result.playerUpdates!.statusEffects = this.applyStatus({ statusEffects: currentEffects }, effect.applyStatus);
+            const statusIcons: Record<string, string> = {
+                'poison': '🧪中毒',
+                'burn': '🔥燃燒',
+                'stun': '💫暈眩',
+                'frozen': '❄️冰凍',
+                'bleed': '🩸流血'
+            };
 
-                const statusIcons: Record<string, string> = {
-                    'poison': '🧪中毒',
-                    'burn': '🔥燃燒',
-                    'stun': '💫暈眩',
-                    'frozen': '❄️冰凍',
-                    'bleed': '🩸流血'
-                };
-                const statusName = statusIcons[effect.applyStatus] || effect.applyStatus;
-                result.floatingTexts.push({ text: statusName, type: effect.applyStatus as any, target: 'player' });
-                result.logs.push(`${monster.name} 的攻擊使你陷入${statusName}狀態！`);
+            const buffIcons: Record<string, string> = {
+                'double_strike': '⚔️連擊',
+                'evasion_stance': '💨迴避',
+                'haste': '⚡加速',
+                'counter_stance': '🛡️格擋',
+                'morale': '✊士氣',
+                'fortify': '🛡️堅韌',
+                'berserk': '😡狂暴'
+            };
+
+            // === 新版多重異常處理 (優先) ===
+            if (effect.applyStatuses && effect.applyStatuses.length > 0) {
+                for (const statusEntry of effect.applyStatuses) {
+                    if (Math.random() < statusEntry.chance) {
+                        // 檢查免疫
+                        if (this.hasStatusImmunity(player, statusEntry.status)) {
+                            result.floatingTexts.push({ text: '免疫！', type: 'buff', target: 'player', color: 'text-green-400' });
+                            result.logs.push(`你免疫了${statusIcons[statusEntry.status] || statusEntry.status}狀態！`);
+                            continue;
+                        }
+                        const currentEffects = result.playerUpdates?.statusEffects || player.statusEffects || [];
+                        result.playerUpdates!.statusEffects = this.applyStatus({ statusEffects: currentEffects }, statusEntry.status);
+
+                        const statusName = statusIcons[statusEntry.status] || statusEntry.status;
+                        result.floatingTexts.push({ text: statusName, type: statusEntry.status as any, target: 'player' });
+                        result.logs.push(`${monster.name} 的攻擊使你陷入${statusName}狀態！`);
+                    }
+                }
+            }
+            // === 舊版單一異常 (向後兼容) ===
+            else if (effect.applyStatus && Math.random() < (effect.statusChance || 0)) {
+                // 檢查免疫
+                if (this.hasStatusImmunity(player, effect.applyStatus)) {
+                    result.floatingTexts.push({ text: '免疫！', type: 'buff', target: 'player', color: 'text-green-400' });
+                    result.logs.push(`你免疫了${statusIcons[effect.applyStatus] || effect.applyStatus}狀態！`);
+                } else {
+                    const currentEffects = result.playerUpdates?.statusEffects || player.statusEffects || [];
+                    result.playerUpdates!.statusEffects = this.applyStatus({ statusEffects: currentEffects }, effect.applyStatus);
+
+                    const statusName = statusIcons[effect.applyStatus] || effect.applyStatus;
+                    result.floatingTexts.push({ text: statusName, type: effect.applyStatus as any, target: 'player' });
+                    result.logs.push(`${monster.name} 的攻擊使你陷入${statusName}狀態！`);
+                }
             }
 
-            // 對自己施加 Buff
-            if (effect.applySelfBuff && Math.random() < (effect.selfBuffChance || 0)) {
+            // === 新版多重 Buff 處理 (優先) ===
+            if (effect.applySelfBuffs && effect.applySelfBuffs.length > 0) {
+                for (const buffEntry of effect.applySelfBuffs) {
+                    if (Math.random() < buffEntry.chance) {
+                        const currentBuffs = result.monsterUpdates?.buffs || monster.buffs || [];
+                        result.monsterUpdates!.buffs = this.applyBuff({ buffs: currentBuffs }, buffEntry.buff, 4, true);
+
+                        const buffName = buffIcons[buffEntry.buff] || buffEntry.buff;
+                        result.floatingTexts.push({ text: buffName, type: 'buff', target: 'monster', color: 'text-orange-400' });
+                        result.logs.push(`${monster.name} 進入了${buffName}態勢！`);
+                    }
+                }
+            }
+            // === 舊版單一 Buff (向後兼容) ===
+            else if (effect.applySelfBuff && Math.random() < (effect.selfBuffChance || 0)) {
                 const currentBuffs = result.monsterUpdates?.buffs || monster.buffs || [];
                 result.monsterUpdates!.buffs = this.applyBuff({ buffs: currentBuffs }, effect.applySelfBuff, 4, true);
 
-                const buffIcons: Record<string, string> = {
-                    'double_strike': '⚔️連擊',
-                    'evasion_stance': '💨迴避',
-                    'haste': '⚡加速',
-                    'counter_stance': '🛡️格擋'
-                };
                 const buffName = buffIcons[effect.applySelfBuff] || effect.applySelfBuff;
                 result.floatingTexts.push({ text: buffName, type: 'buff', target: 'monster', color: 'text-orange-400' });
                 result.logs.push(`${monster.name} 進入了${buffName}態勢！`);

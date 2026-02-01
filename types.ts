@@ -57,7 +57,9 @@ export interface Affix {
   // 新增效果
   | 'poison_hit' | 'burn_hit' | 'freeze_hit' | 'berserk_on_hit'
   | 'speed_haste' | 'def_pierce' | 'double_attack' | 'stun_hit' | 'execute_dmg'
-  | 'first_strike' | 'max_might' | 'start_shield' | 'skill_amp' | 'falcon_blitz';
+  | 'first_strike' | 'max_might' | 'start_shield' | 'skill_amp' | 'falcon_blitz'
+  // 狀態免疫效果
+  | 'poison_immune' | 'burn_immune' | 'bleed_immune' | 'frozen_immune' | 'stun_immune';
 }
 
 export interface Item {
@@ -121,16 +123,22 @@ export interface Monster {
   role?: MonsterRole;
   floorRange?: [number, number];  // [起始樓層, 結束樓層]
   isSubSpecies?: boolean;         // 是否為亞種
+  isElite?: boolean;              // 是否為菁英怪物
   description?: string;           // 怪物描述
 }
 
 // 怪物攻擊擊中效果
 export interface MonsterOnHitEffect {
-  applyStatus?: StatusType;       // 對玩家施加狀態異常
+  // 舊版單一異常 (保留向後兼容)
+  applyStatus?: StatusType;       // 對玩家施加狀態異常 (單一)
   statusChance?: number;          // 機率 0~1
-  applySelfBuff?: BuffType;       // 對自己施加 Buff
+  applySelfBuff?: BuffType;       // 對自己施加 Buff (單一)
   selfBuffChance?: number;        // 機率 0~1
   bonusDamagePercent?: number;    // 額外傷害百分比
+
+  // 新版多重異常/Buff (優先使用)
+  applyStatuses?: Array<{ status: StatusType; chance: number }>;     // 多種異常
+  applySelfBuffs?: Array<{ buff: BuffType; chance: number }>;        // 多種自身Buff
 }
 
 export interface Achievement {
