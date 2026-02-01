@@ -75,6 +75,7 @@ export default function FantasyAdventure() {
   const [inBattle, setInBattle] = useState(false);
   const [skillCooldown, setSkillCooldown] = useState(0);
   const [weaponSkillCooldown, setWeaponSkillCooldown] = useState(0);
+  const [fleeCooldown, setFleeCooldown] = useState(0);
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [screenShake, setScreenShake] = useState(false);
   const [monsterShake, setMonsterShake] = useState(false);
@@ -132,6 +133,7 @@ export default function FantasyAdventure() {
         // 更新 Cooldowns 與 ATB
         setSkillCooldown(prev => Math.max(0, prev + result.skillCdDelta));
         setWeaponSkillCooldown(prev => Math.max(0, prev + result.weaponCdDelta));
+        setFleeCooldown(prev => Math.max(0, prev - 0.1));
         setPlayerATB(prev => prev + result.playerAtbDelta);
 
         // 處理 DoT 造成的狀態更新 (如果有的話)
@@ -648,6 +650,7 @@ export default function FantasyAdventure() {
     setMonsterATB(0);
     setSkillCooldown(0);
     setWeaponSkillCooldown(0);
+    setFleeCooldown(0);
 
     // === 新增: 鐵壁符文效果 (start_shield，戰鬥開始時獲得護盾) ===
     let bonusShield = 0;
@@ -720,6 +723,30 @@ export default function FantasyAdventure() {
     if (player.potions <= 0) return;
     const result = BattleHandler.usePotion(player);
     applyBattleResult(result);
+  };
+
+  const flee = () => {
+    if (!inBattle || fleeCooldown > 0) return;
+
+    // 計算逃跑成功率: 基礎 25% + AGI * 1%, 最高 95%
+    const baseRate = 25;
+    const agiBonus = player.agi * 1;
+    const successRate = Math.min(95, baseRate + agiBonus);
+
+    const roll = Math.random() * 100;
+
+    if (roll < successRate) {
+      // 逃跑成功
+      setBattleLog(prev => [...prev, `🏃 逃跑成功！(成功率: ${successRate.toFixed(0)}%)`]);
+      setInBattle(false);
+      setTimeout(() => {
+        returnToVillage();
+      }, 800);
+    } else {
+      // 逃跑失敗
+      setBattleLog(prev => [...prev, `🚨 逃跑失敗...請繼續戰鬥！(成功率: ${successRate.toFixed(0)}%)`]);
+      setFleeCooldown(8); // 8秒冷却
+    }
   };
 
   // --- End Actions ---
@@ -833,19 +860,6 @@ export default function FantasyAdventure() {
     }, 2000);
   };
 
-  const flee = () => {
-    if (Math.random() < 0.6) {
-      setInBattle(false);
-      setBattleLog(prev => [...prev, '成功逃跑！返回村莊...']);
-      setTimeout(() => {
-        setCurrentMonster(null);
-        returnToVillage();
-      }, 1000);
-    } else {
-      setBattleLog(prev => [...prev, '逃跑失敗！']);
-      setPlayerATB(0);
-    }
-  };
 
   const allocateStat = (stat: string) => {
     if (player.statPoints <= 0) return;
@@ -1746,8 +1760,9 @@ export default function FantasyAdventure() {
                   <span className="text-xs mt-1">藥水</span>
                 </button>
 
-                <button onClick={flee} className="col-span-1 bg-gray-700 hover:bg-gray-600 rounded-lg flex flex-col items-center justify-center border border-gray-500 text-gray-300">
+                <button onClick={flee} disabled={fleeCooldown > 0} className={`col-span-1 rounded-lg flex flex-col items-center justify-center border transition-all relative overflow-hidden ${fleeCooldown <= 0 ? 'bg-gray-700 hover:bg-gray-600 border-gray-500 text-gray-300' : 'bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed'}`}>
                   <div className="text-xl">🏃</div><span className="text-xs mt-1">逃跑</span>
+                  {fleeCooldown > 0 && (<div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xl font-bold text-white">{fleeCooldown.toFixed(1)}</div>)}
                 </button>
               </div>
             </div>
