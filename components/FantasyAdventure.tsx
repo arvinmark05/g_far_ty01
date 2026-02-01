@@ -1616,11 +1616,6 @@ export default function FantasyAdventure() {
             `}</style>
           <SettingsModal />
 
-          <div className="absolute top-4 right-4 z-[60]">
-            <button onClick={() => setShowSettings(true)} className="p-2 rounded-lg bg-black/50 hover:bg-black/70 border border-gray-600 text-gray-300 hover:text-white transition-all backdrop-blur-md">
-              <Settings size={20} />
-            </button>
-          </div>
 
           <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
             {floatingTexts.map((ft, index) => {
