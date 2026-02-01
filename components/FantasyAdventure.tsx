@@ -1154,7 +1154,7 @@ export default function FantasyAdventure() {
         <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 relative">
           <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 max-w-2xl w-full border border-purple-500/30 relative">
             <h1 className="text-4xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-              ⚔️ Fantasy Adventure RPG
+              ⚔️ 簡單地城
             </h1>
             <p className="text-center text-purple-300 mb-6">選擇你的職業，開始無盡的地下城冒險</p>
 

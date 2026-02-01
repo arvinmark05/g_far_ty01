@@ -1,4 +1,4 @@
-# Fantasy Adventure RPG
+# 簡單地城
 
 一款使用 React + TypeScript 隨手開發的網頁遊戲。
 
