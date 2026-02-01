@@ -1628,7 +1628,7 @@ export default function FantasyAdventure() {
             })}
           </div>
 
-          <div className="max-w-4xl mx-auto relative flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="w-full relative flex-1 flex flex-col min-h-0 overflow-hidden">
 
             <div className={`mt-2 backdrop-blur-sm rounded-xl p-3 mb-2 text-center transition-all duration-300 relative shrink-0 ${currentMonster.isBoss ? 'bg-red-950/80 border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)] scale-105' : 'bg-black/40 border border-red-500/30'} ${monsterShake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}>
               <div className={`absolute inset-0 bg-white mix-blend-overlay transition-opacity duration-100 rounded-xl pointer-events-none ${hitFlash ? 'opacity-40' : 'opacity-0'}`}></div>
